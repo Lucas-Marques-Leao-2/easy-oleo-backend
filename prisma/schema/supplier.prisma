@@ -1,0 +1,38 @@
+model Supplier {
+    id         String  @id @default(cuid())
+    legalName  String
+    cnpj       String  @unique
+    street     String
+    number     String
+    complement String?
+    district   String?
+    city       String
+    state      String
+    zipCode    String
+    email      String
+
+    phones           SupplierPhone[]
+    supplierProducts SupplierProduct[]
+    purchaseOrders   PurchaseOrder[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model SupplierProduct {
+    supplierId String
+    productId  String
+    supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+    product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+    @@id([supplierId, productId])
+}
+
+model SupplierPhone {
+    id         String   @id @default(cuid())
+    supplierId String
+    supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+    number     String
+
+    @@index([supplierId])
+}

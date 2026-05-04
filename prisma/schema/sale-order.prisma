@@ -1,0 +1,42 @@
+model SaleOrder {
+    id        String          @id @default(cuid())
+    orderDate DateTime
+    total     Decimal         @db.Decimal(14, 2)
+    status    SaleOrderStatus @default(DRAFT)
+
+    customerId String
+    customer   Customer @relation(fields: [customerId], references: [id])
+
+    createdByUserId String
+    createdBy       User   @relation("SaleOrdersCreated", fields: [createdByUserId], references: [id])
+
+    items SaleOrderItem[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([customerId])
+    @@index([orderDate])
+}
+
+model SaleOrderItem {
+    id        String  @id @default(cuid())
+    quantity  Decimal @db.Decimal(14, 4)
+    unitPrice Decimal @db.Decimal(12, 2)
+    subtotal  Decimal @db.Decimal(14, 2)
+
+    saleOrderId String
+    saleOrder   SaleOrder @relation(fields: [saleOrderId], references: [id], onDelete: Cascade)
+
+    productId String
+    product   Product @relation(fields: [productId], references: [id])
+
+    @@index([saleOrderId])
+    @@index([productId])
+}
+
+enum SaleOrderStatus {
+    DRAFT
+    CONFIRMED
+    CANCELLED
+}

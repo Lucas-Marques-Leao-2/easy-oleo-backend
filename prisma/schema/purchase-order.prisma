@@ -1,0 +1,35 @@
+model PurchaseOrder {
+    id           String   @id @default(cuid())
+    purchaseDate DateTime
+    total        Decimal  @db.Decimal(14, 2)
+
+    supplierId String
+    supplier   Supplier @relation(fields: [supplierId], references: [id])
+
+    registeredByUserId String
+    registeredBy       User   @relation(fields: [registeredByUserId], references: [id])
+
+    items PurchaseOrderItem[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([supplierId])
+    @@index([purchaseDate])
+}
+
+model PurchaseOrderItem {
+    id       String  @id @default(cuid())
+    quantity Decimal @db.Decimal(14, 4)
+    unitCost Decimal @db.Decimal(12, 2)
+    subtotal Decimal @db.Decimal(14, 2)
+
+    purchaseOrderId String
+    purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+    productId String
+    product   Product @relation(fields: [productId], references: [id])
+
+    @@index([purchaseOrderId])
+    @@index([productId])
+}

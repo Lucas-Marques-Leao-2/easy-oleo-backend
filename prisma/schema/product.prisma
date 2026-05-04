@@ -1,0 +1,18 @@
+model Product {
+    id            String   @id @default(cuid())
+    code          String   @unique
+    name          String
+    brand         String
+    type          String
+    viscosity     String?
+    unit          String
+    salePrice     Decimal  @db.Decimal(12, 2)
+    stockQuantity Decimal  @db.Decimal(14, 4)
+    minStock      Decimal  @db.Decimal(14, 4)
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+
+    saleOrderItems   SaleOrderItem[]
+    purchaseItems    PurchaseOrderItem[]
+    supplierProducts SupplierProduct[]
+}

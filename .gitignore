@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Nest / TypeScript build
+dist/
+build/
+*.tsbuildinfo
+
+# Env (keep templates committed)
+.env
+.env.*
+!.env.example
+
+# Debug & tooling
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+
+# Testing & coverage
+coverage/
+
+# OS & editors
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/

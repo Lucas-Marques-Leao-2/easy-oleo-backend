@@ -1,0 +1,36 @@
+name: easy-oleo
+
+services:
+  pg:
+    image: postgres:16
+    restart: unless-stopped
+    ports:
+      - "7075:5432"
+    environment:
+      - POSTGRES_USER=docker
+      - POSTGRES_PASSWORD=docker
+      - POSTGRES_DB=easy-oleo
+    volumes:
+      - easy_oleo_pg:/var/lib/postgresql/data
+    networks:
+      - easy_oleo_pgnet
+
+  pg-admin:
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    ports:
+      - "7076:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=docker@dev.com
+      - PGADMIN_DEFAULT_PASSWORD=docker
+    depends_on:
+      - pg
+    networks:
+      - easy_oleo_pgnet
+
+networks:
+  easy_oleo_pgnet:
+    driver: bridge
+
+volumes:
+  easy_oleo_pg:
