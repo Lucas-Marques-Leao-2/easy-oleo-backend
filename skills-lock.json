@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "nestjs-testing-expert": {
+      "source": "shipshitdev/library",
+      "sourceType": "github",
+      "skillPath": "skills/nestjs-testing-expert/SKILL.md",
+      "computedHash": "c708d4305c3a30e3640499d09dec5b7f0cf772c2b3a53d3ff9945cbde4e4cfda"
+    },
+    "writing-plans": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/writing-plans/SKILL.md",
+      "computedHash": "2b986445454a025ca2c3839f8a2024747e8cce0517948437232cd113d2719060"
+    }
+  }
+}
