@@ -20,10 +20,6 @@ export const createUserDtoBase = z.object({
   state: z.string().length(2).openapi({ example: "AL" }),
   zipCode: z.string().min(8).openapi({ example: "57020000" }),
   email: z.string().email().openapi({ example: "carla@easyoleo.local" }),
-  password: z.string().min(8).max(72).openapi({
-    description: "Senha em texto; armazenada com hash.",
-    example: "SenhaSegura1!",
-  }),
   role: z
     .enum(["ATTENDANT", "SELLER", "ADMIN"])
     .optional()
@@ -44,7 +40,6 @@ export const createUserDto = createUserDtoBase.openapi("CreateUserDto", {
     state: "AL",
     zipCode: "57020000",
     email: "carla@easyoleo.local",
-    password: "SenhaSegura1!",
     role: "ADMIN",
     phones: ["82991112233"],
   } as any,

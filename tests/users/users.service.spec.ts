@@ -1,5 +1,13 @@
 import * as bcrypt from "bcryptjs";
-import { ConflictException, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  InternalServerErrorException,
+  NotFoundException,
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import type { WebhookEvent } from "@clerk/express";
+import { Webhook } from "svix";
 
 import { UsersRepository } from "../../src/users/users.repository";
 import { UsersService } from "../../src/users/users.service";
@@ -9,6 +17,7 @@ const now = new Date("2026-04-20T10:00:00.000Z");
 function user(overrides: Record<string, unknown> = {}) {
   return {
     id: "user-1",
+    externalId: null,
     name: "Carla Administradora",
     cpf: "52998224725",
     street: "Rua Principal",
@@ -29,28 +38,53 @@ function user(overrides: Record<string, unknown> = {}) {
 }
 
 describe("UsersService", () => {
-  let repo: jest.Mocked<UsersRepository>;
+  let repo: jest.Mocked<
+    Pick<
+      UsersRepository,
+      | "create"
+      | "findAll"
+      | "findById"
+      | "findByCpf"
+      | "findByEmail"
+      | "findByExternalId"
+      | "update"
+      | "remove"
+      | "upsertFromClerk"
+    >
+  >;
+  let config: { getOrThrow: jest.Mock };
   let service: UsersService;
 
   beforeEach(() => {
     jest.spyOn(bcrypt, "hash").mockResolvedValue("hashed-password" as never);
+    config = {
+      getOrThrow: jest.fn().mockImplementation((k: string) => {
+        if (k === "CLERK_WEBHOOK_SECRET") return "whsec_test";
+        throw new Error(`unexpected ${k}`);
+      }),
+    };
     repo = {
       create: jest.fn(),
       findAll: jest.fn(),
       findById: jest.fn(),
       findByCpf: jest.fn(),
       findByEmail: jest.fn(),
+      findByExternalId: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
-    } as unknown as jest.Mocked<UsersRepository>;
-    service = new UsersService(repo);
+      upsertFromClerk: jest.fn(),
+    };
+    service = new UsersService(
+      repo as unknown as UsersRepository,
+      config as unknown as ConfigService,
+    );
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
-  it("creates a user with hashed password and without returning passwordHash", async () => {
+  it("creates a user with internal password hash and without returning passwordHash", async () => {
     const dto = {
       name: "Carla Administradora",
       cpf: "52998224725",
@@ -60,7 +94,6 @@ describe("UsersService", () => {
       state: "AL",
       zipCode: "57020000",
       email: "carla@easyoleo.local",
-      password: "SenhaSegura1!",
       phones: ["82991112233"],
     };
     repo.findByCpf.mockResolvedValue(null);
@@ -69,7 +102,7 @@ describe("UsersService", () => {
 
     const result = await service.create(dto);
 
-    expect(bcrypt.hash).toHaveBeenCalledWith("SenhaSegura1!", 10);
+    expect(bcrypt.hash).toHaveBeenCalledWith(expect.any(String), 10);
     expect(repo.create).toHaveBeenCalledWith(
       expect.objectContaining({
         passwordHash: "hashed-password",
@@ -96,7 +129,7 @@ describe("UsersService", () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it("updates only provided fields and hashes a new password", async () => {
+  it("updates only provided fields", async () => {
     repo.findById.mockResolvedValue(user() as never);
     repo.findByEmail.mockResolvedValue(user() as never);
     repo.update.mockResolvedValue(
@@ -106,7 +139,6 @@ describe("UsersService", () => {
     await expect(
       service.update("user-1", {
         email: "carla.nova@sistema.req",
-        password: "OutraSenha2@",
         phones: ["82991112233"],
       }),
     ).resolves.toMatchObject({ email: "carla.nova@sistema.req" });
@@ -114,7 +146,6 @@ describe("UsersService", () => {
       "user-1",
       expect.objectContaining({
         email: "carla.nova@sistema.req",
-        passwordHash: "hashed-password",
       }),
       ["82991112233"],
     );
@@ -138,5 +169,110 @@ describe("UsersService", () => {
     await expect(service.findOne("missing")).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+});
+
+describe("UsersService.processClerkWebhook", () => {
+  let verifyMock: jest.SpyInstance;
+  let repo: jest.Mocked<
+    Pick<UsersRepository, "findByExternalId" | "upsertFromClerk">
+  >;
+  let config: { getOrThrow: jest.Mock };
+  let service: UsersService;
+
+  beforeEach(() => {
+    verifyMock = jest.spyOn(Webhook.prototype, "verify").mockReturnValue({
+      type: "user.created",
+      data: {
+        id: "user_clerk_1",
+        email_addresses: [{ id: "ea1", email_address: "c@example.com" }],
+        primary_email_address_id: "ea1",
+        first_name: "Pat",
+        last_name: "Lee",
+      },
+    } as WebhookEvent);
+    jest
+      .spyOn(bcrypt, "hash")
+      .mockResolvedValue("clerk-provision-hash" as never);
+    config = {
+      getOrThrow: jest.fn().mockReturnValue("whsec_test"),
+    };
+    repo = {
+      findByExternalId: jest.fn(),
+      upsertFromClerk: jest.fn(),
+    };
+    service = new UsersService(
+      repo as unknown as UsersRepository,
+      config as unknown as ConfigService,
+    );
+  });
+
+  afterEach(() => {
+    verifyMock.mockRestore();
+    jest.restoreAllMocks();
+  });
+
+  it("throws when Svix verification fails", async () => {
+    verifyMock.mockImplementation(() => {
+      throw new Error("bad sig");
+    });
+    await expect(
+      service.processClerkWebhook({}, "id", "ts", "sig"),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it("upserts with create profile when user does not exist yet", async () => {
+    repo.findByExternalId.mockResolvedValue(null);
+    repo.upsertFromClerk.mockResolvedValue(
+      user({
+        externalId: "user_clerk_1",
+        email: "c@example.com",
+        name: "Pat Lee",
+      }) as never,
+    );
+    await service.processClerkWebhook({ x: 1 }, "id", "ts", "sig");
+    expect(repo.upsertFromClerk).toHaveBeenCalledWith(
+      expect.objectContaining({
+        externalId: "user_clerk_1",
+        email: "c@example.com",
+        name: "Pat Lee",
+        createProfile: expect.objectContaining({
+          role: "ATTENDANT",
+          passwordHash: "clerk-provision-hash",
+        }),
+      }),
+    );
+  });
+
+  it("updates without create profile when user already exists", async () => {
+    verifyMock.mockReturnValue({
+      type: "user.updated",
+      data: {
+        id: "user_clerk_1",
+        email_addresses: [{ id: "ea1", email_address: "new@example.com" }],
+        primary_email_address_id: "ea1",
+        first_name: "Pat",
+        last_name: "Lee",
+      },
+    } as WebhookEvent);
+    repo.findByExternalId.mockResolvedValue(
+      user({ externalId: "user_clerk_1" }) as never,
+    );
+    repo.upsertFromClerk.mockResolvedValue(user() as never);
+    await service.processClerkWebhook({ x: 1 }, "id", "ts", "sig");
+    expect(repo.upsertFromClerk).toHaveBeenCalledWith({
+      externalId: "user_clerk_1",
+      email: "new@example.com",
+      name: "Pat Lee",
+      createProfile: undefined,
+    });
+  });
+
+  it("throws InternalServerErrorException when upsert fails", async () => {
+    repo.findByExternalId.mockResolvedValue(null);
+    repo.upsertFromClerk.mockRejectedValue(new Error("db"));
+    await expect(
+      service.processClerkWebhook({ x: 1 }, "id", "ts", "sig"),
+    ).rejects.toBeInstanceOf(InternalServerErrorException);
   });
 });

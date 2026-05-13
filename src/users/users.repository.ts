@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { Prisma, User, UserPhone } from "@prisma/client";
+import { Prisma, User, UserPhone, UserRole } from "@prisma/client";
 
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -46,6 +46,13 @@ export class UsersRepository {
     return this.prisma.user.findUnique({ where: { email } });
   }
 
+  findByExternalId(externalId: string): Promise<UserWithPhones | null> {
+    return this.prisma.user.findUnique({
+      where: { externalId },
+      include: { phones: true },
+    });
+  }
+
   async update(
     id: string,
     data: Prisma.UserUpdateInput,
@@ -76,6 +83,42 @@ export class UsersRepository {
   remove(id: string): Promise<UserWithPhones> {
     return this.prisma.user.delete({
       where: { id },
+      include: { phones: true },
+    });
+  }
+
+  upsertFromClerk(args: {
+    externalId: string;
+    email: string;
+    name: string;
+    createProfile?: {
+      cpf: string;
+      passwordHash: string;
+      street: string;
+      number: string;
+      city: string;
+      state: string;
+      zipCode: string;
+      role: UserRole;
+    };
+  }): Promise<UserWithPhones> {
+    const { externalId, email, name, createProfile } = args;
+    if (!createProfile) {
+      return this.prisma.user.update({
+        where: { externalId },
+        data: { email, name },
+        include: { phones: true },
+      });
+    }
+    return this.prisma.user.upsert({
+      where: { externalId },
+      create: {
+        externalId,
+        email,
+        name,
+        ...createProfile,
+      },
+      update: { email, name },
       include: { phones: true },
     });
   }

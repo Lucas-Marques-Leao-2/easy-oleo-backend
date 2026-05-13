@@ -47,7 +47,6 @@ describe("DTO schemas", () => {
       state: "AL",
       zipCode: "57020000",
       email: "carla@easyoleo.local",
-      password: "SenhaSegura1!",
     });
     expect(parsedUser).toMatchObject({ cpf: "52998224725" });
     expect(parsedUser).not.toHaveProperty("role");
@@ -88,7 +87,7 @@ describe("DTO schemas", () => {
   it("rejects invalid required fields", () => {
     expect(() => createCustomerDto.parse({ document: "123" })).toThrow();
     expect(() => createSupplierDto.parse({ cnpj: "11111111111111" })).toThrow();
-    expect(() => createUserDto.parse({ password: "short" })).toThrow();
+    expect(() => createUserDto.parse({ email: "not-an-email" })).toThrow();
     expect(() => createProductDto.parse({ salePrice: -1 })).toThrow();
     expect(() =>
       createSaleOrderDto.parse({
@@ -110,10 +109,8 @@ describe("DTO schemas", () => {
     ).toEqual({
       city: "Maceió",
     });
-    expect(
-      updateUserDto.parse({ cpf: "ignored", password: "OutraSenha2@" }),
-    ).toEqual({
-      password: "OutraSenha2@",
+    expect(updateUserDto.parse({ cpf: "ignored", name: "Novo nome" })).toEqual({
+      name: "Novo nome",
     });
     expect(updateSaleOrderDto.parse({ createdByUserId: "ignored" })).toEqual(
       {},

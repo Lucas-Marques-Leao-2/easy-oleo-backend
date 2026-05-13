@@ -1,5 +1,7 @@
 import { Test } from "@nestjs/testing";
 
+import { ClerkAuthGuard } from "../src/auth/clerk-auth.guard";
+import { RolesGuard } from "../src/auth/roles.guard";
 import { CustomersController } from "../src/customers/customers.controller";
 import { CustomersService } from "../src/customers/customers.service";
 import { ProductsController } from "../src/products/products.controller";
@@ -37,7 +39,12 @@ describe("CRUD controllers", () => {
       const moduleRef = await Test.createTestingModule({
         controllers: [Controller],
         providers: [{ provide: Service, useValue: service }],
-      }).compile();
+      })
+        .overrideGuard(ClerkAuthGuard)
+        .useValue({ canActivate: () => true })
+        .overrideGuard(RolesGuard)
+        .useValue({ canActivate: () => true })
+        .compile();
       const controller = moduleRef.get(Controller) as {
         create: (dto: unknown) => Promise<unknown>;
         findAll: () => Promise<unknown>;
@@ -74,7 +81,12 @@ describe("SaleOrdersController", () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [SaleOrdersController],
       providers: [{ provide: SaleOrdersService, useValue: service }],
-    }).compile();
+    })
+      .overrideGuard(ClerkAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
     const controller = moduleRef.get(SaleOrdersController);
 
     await expect(
@@ -106,7 +118,12 @@ describe("PurchaseOrdersController", () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [PurchaseOrdersController],
       providers: [{ provide: PurchaseOrdersService, useValue: service }],
-    }).compile();
+    })
+      .overrideGuard(ClerkAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
     const controller = moduleRef.get(PurchaseOrdersController);
 
     await expect(

@@ -8,10 +8,12 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ZodValidationPipe } from "@wahyubucil/nestjs-zod-openapi";
 
+import { ClerkAuthGuard } from "../auth/clerk-auth.guard";
 import { HttpBadRequestResponse } from "../common/responses/http-bad-request.response";
 import { HttpNotFoundResponse } from "../common/responses/http-not-found.response";
 import { SaleOrderResponse } from "./responses/sale-order.response";
@@ -21,6 +23,7 @@ import { SaleOrdersService } from "./sale-orders.service";
 
 @ApiTags("Sale orders")
 @Controller("sale-orders")
+@UseGuards(ClerkAuthGuard)
 export class SaleOrdersController {
   constructor(private readonly saleOrdersService: SaleOrdersService) {}
 

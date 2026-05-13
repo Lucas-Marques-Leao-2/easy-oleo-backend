@@ -1,17 +1,25 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
   Patch,
   Post,
+  UseGuards,
 } from "@nestjs/common";
+import { UserRole } from "@prisma/client";
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ZodValidationPipe } from "@wahyubucil/nestjs-zod-openapi";
 
+import { ClerkAuthGuard } from "../auth/clerk-auth.guard";
+import { Public } from "../auth/public.decorator";
+import { Roles } from "../auth/roles.decorator";
+import { RolesGuard } from "../auth/roles.guard";
 import { HttpConflictResponse } from "../common/responses/http-conflict.response";
 import { HttpNotFoundResponse } from "../common/responses/http-not-found.response";
 import { UserResponse } from "./responses/user.response";
@@ -21,13 +29,14 @@ import { UsersService } from "./users.service";
 
 @ApiTags("Users")
 @Controller("users")
+@UseGuards(ClerkAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @ApiOperation({
     summary: "Cadastra usuário",
     description:
-      "Dados pessoais, endereço, e-mail, hash de senha, telefones; role opcional (default ATTENDANT).",
+      "Dados pessoais, endereço, e-mail e telefones; autenticação via Clerk. Role opcional (default ATTENDANT).",
   })
   @ApiResponse({
     status: 201,
@@ -40,10 +49,43 @@ export class UsersController {
     description: "CPF ou e-mail já cadastrado.",
     type: HttpConflictResponse,
   })
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Post()
   @HttpCode(HttpStatus.CREATED)
   create(@Body(ZodValidationPipe) dto: CreateUserDto): Promise<UserResponse> {
     return this.usersService.create(dto);
+  }
+
+  @Public()
+  @Post("clerk-webhook")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: "Webhook Clerk",
+    description: "Sincroniza user.created e user.updated (Svix).",
+  })
+  @ApiResponse({ status: 204, description: "Processado." })
+  @ApiResponse({ status: 400, description: "Headers ou assinatura inválidos." })
+  async clerkWebhook(
+    @Body() body: unknown,
+    @Headers() headers: Record<string, string | string[] | undefined>,
+  ): Promise<void> {
+    const svixId = headers["svix-id"];
+    const svixTimestamp = headers["svix-timestamp"];
+    const svixSignature = headers["svix-signature"];
+    if (
+      typeof svixId !== "string" ||
+      typeof svixTimestamp !== "string" ||
+      typeof svixSignature !== "string"
+    ) {
+      throw new BadRequestException("Headers necessários não fornecidos.");
+    }
+    await this.usersService.processClerkWebhook(
+      body,
+      svixId,
+      svixTimestamp,
+      svixSignature,
+    );
   }
 
   @ApiOperation({ summary: "Lista usuários" })
@@ -54,6 +96,8 @@ export class UsersController {
     isArray: true,
   })
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
   findAll(): Promise<UserResponse[]> {
     return this.usersService.findAll();
   }
@@ -117,6 +161,8 @@ export class UsersController {
     type: HttpNotFoundResponse,
   })
   @Delete(":id")
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
   remove(@Param("id") id: string): Promise<UserResponse> {
     return this.usersService.remove(id);
   }
