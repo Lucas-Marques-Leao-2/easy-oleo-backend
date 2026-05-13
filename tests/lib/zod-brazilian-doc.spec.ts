@@ -2,7 +2,7 @@ import {
   zCnpjDigitsString,
   zCpfDigitsString,
   zCustomerDocumentDigitsString,
-} from "./zod-brazilian-doc";
+} from "../../src/lib/zod-brazilian-doc";
 
 describe("Brazilian document zod helpers", () => {
   it("accepts valid CPF and CNPJ digit strings", () => {

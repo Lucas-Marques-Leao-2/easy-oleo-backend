@@ -2,17 +2,17 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
+} from "@nestjs/common";
 
-import { throwConflictIfUniqueViolation } from '../lib/prisma-unique.util';
-import { CustomersRepository } from './customers.repository';
-import { CustomerResponse } from './responses/customer.response';
-import { CreateCustomerDto } from './schemas/create-customer.dto';
-import { UpdateCustomerDto } from './schemas/update-customer.dto';
+import { throwConflictIfUniqueViolation } from "../lib/prisma-unique.util";
+import { CustomersRepository } from "./customers.repository";
+import { CustomerResponse } from "./responses/customer.response";
+import { CreateCustomerDto } from "./schemas/create-customer.dto";
+import { UpdateCustomerDto } from "./schemas/update-customer.dto";
 
-function toResponse(row: Awaited<
-  ReturnType<CustomersRepository['findById']>
->): CustomerResponse {
+function toResponse(
+  row: Awaited<ReturnType<CustomersRepository["findById"]>>,
+): CustomerResponse {
   if (!row) {
     throw new NotFoundException();
   }
@@ -40,9 +40,11 @@ export class CustomersService {
   constructor(private readonly customersRepository: CustomersRepository) {}
 
   async create(dto: CreateCustomerDto): Promise<CustomerResponse> {
-    const existing = await this.customersRepository.findByDocument(dto.document);
+    const existing = await this.customersRepository.findByDocument(
+      dto.document,
+    );
     if (existing) {
-      throw new ConflictException('Este documento já está cadastrado.');
+      throw new ConflictException("Este documento já está cadastrado.");
     }
     try {
       const row = await this.customersRepository.create(dto);
@@ -60,7 +62,7 @@ export class CustomersService {
 
   async findOne(id: string): Promise<CustomerResponse> {
     const row = await this.customersRepository.findById(id);
-    if (!row) throw new NotFoundException('Customer não encontrado.');
+    if (!row) throw new NotFoundException("Customer não encontrado.");
     return toResponse(row);
   }
 

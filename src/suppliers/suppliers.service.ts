@@ -2,16 +2,16 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
+} from "@nestjs/common";
 
-import { throwConflictIfUniqueViolation } from '../lib/prisma-unique.util';
-import { SupplierResponse } from './responses/supplier.response';
-import { CreateSupplierDto } from './schemas/create-supplier.dto';
-import { UpdateSupplierDto } from './schemas/update-supplier.dto';
-import { SuppliersRepository } from './suppliers.repository';
+import { throwConflictIfUniqueViolation } from "../lib/prisma-unique.util";
+import { SupplierResponse } from "./responses/supplier.response";
+import { CreateSupplierDto } from "./schemas/create-supplier.dto";
+import { UpdateSupplierDto } from "./schemas/update-supplier.dto";
+import { SuppliersRepository } from "./suppliers.repository";
 
 function toResponse(
-  row: Awaited<ReturnType<SuppliersRepository['findById']>>,
+  row: Awaited<ReturnType<SuppliersRepository["findById"]>>,
 ): SupplierResponse {
   if (!row) {
     throw new NotFoundException();
@@ -41,7 +41,7 @@ export class SuppliersService {
   async create(dto: CreateSupplierDto): Promise<SupplierResponse> {
     const existing = await this.suppliersRepository.findByCnpj(dto.cnpj);
     if (existing) {
-      throw new ConflictException('Este CNPJ já está cadastrado.');
+      throw new ConflictException("Este CNPJ já está cadastrado.");
     }
     try {
       const row = await this.suppliersRepository.create(dto);
@@ -59,7 +59,7 @@ export class SuppliersService {
 
   async findOne(id: string): Promise<SupplierResponse> {
     const row = await this.suppliersRepository.findById(id);
-    if (!row) throw new NotFoundException('Fornecedor não encontrado.');
+    if (!row) throw new NotFoundException("Fornecedor não encontrado.");
     return toResponse(row);
   }
 

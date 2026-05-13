@@ -1,7 +1,7 @@
 import { ConflictException, NotFoundException } from "@nestjs/common";
 
-import { SuppliersRepository } from "./suppliers.repository";
-import { SuppliersService } from "./suppliers.service";
+import { SuppliersRepository } from "../../src/suppliers/suppliers.repository";
+import { SuppliersService } from "../../src/suppliers/suppliers.service";
 
 const now = new Date("2026-04-20T10:00:00.000Z");
 

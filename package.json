@@ -15,7 +15,7 @@
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage --runInBand",
-    "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
+    "lint": "eslint \"{src,tests}/**/*.ts\" --fix",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"

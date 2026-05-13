@@ -3,13 +3,10 @@ import { z } from "zod";
 import { createZodDto } from "@wahyubucil/nestjs-zod-openapi";
 
 export const createProductDtoBase = z.object({
-  code: z
-    .string()
-    .min(1)
-    .openapi({
-      description: "Código único do produto.",
-      example: "OLEO-5W30-1L",
-    }),
+  code: z.string().min(1).openapi({
+    description: "Código único do produto.",
+    example: "OLEO-5W30-1L",
+  }),
   name: z.string().min(1).openapi({ example: "Óleo motor sintético 5W30" }),
   brand: z.string().min(1).openapi({ example: "Mobil" }),
   type: z.string().min(1).openapi({ example: "óleo lubrificante" }),

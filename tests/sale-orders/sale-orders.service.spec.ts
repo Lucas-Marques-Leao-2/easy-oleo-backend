@@ -1,10 +1,13 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Prisma, SaleOrderStatus } from "@prisma/client";
 
-import { PrismaService } from "../prisma/prisma.service";
-import { ProductsRepository } from "../products/products.repository";
-import { SaleOrdersRepository, SaleOrderFull } from "./sale-orders.repository";
-import { SaleOrdersService } from "./sale-orders.service";
+import { PrismaService } from "../../src/prisma/prisma.service";
+import { ProductsRepository } from "../../src/products/products.repository";
+import {
+  SaleOrdersRepository,
+  SaleOrderFull,
+} from "../../src/sale-orders/sale-orders.repository";
+import { SaleOrdersService } from "../../src/sale-orders/sale-orders.service";
 
 const now = new Date("2026-04-20T10:00:00.000Z");
 

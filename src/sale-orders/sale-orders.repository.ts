@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable } from "@nestjs/common";
 import {
   Prisma,
   SaleOrder,
@@ -6,15 +6,15 @@ import {
   Customer,
   User,
   Product,
-} from '@prisma/client';
+} from "@prisma/client";
 
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from "../prisma/prisma.service";
 
 export type SaleOrderFull = SaleOrder & {
-  customer: Pick<Customer, 'id' | 'name'>;
-  createdBy: Pick<User, 'id' | 'name'>;
+  customer: Pick<Customer, "id" | "name">;
+  createdBy: Pick<User, "id" | "name">;
   items: (SaleOrderItem & {
-    product: Pick<Product, 'id' | 'code' | 'name'>;
+    product: Pick<Product, "id" | "code" | "name">;
   })[];
 };
 
@@ -25,7 +25,7 @@ const includeFull = {
     include: {
       product: { select: { id: true, code: true, name: true } },
     },
-    orderBy: { id: 'asc' as const },
+    orderBy: { id: "asc" as const },
   },
 } satisfies Prisma.SaleOrderInclude;
 
@@ -49,7 +49,7 @@ export class SaleOrdersRepository {
 
   findAll(): Promise<SaleOrderFull[]> {
     return this.prisma.saleOrder.findMany({
-      orderBy: { orderDate: 'desc' },
+      orderBy: { orderDate: "desc" },
       include: includeFull,
     });
   }

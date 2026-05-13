@@ -7,40 +7,35 @@ import {
   Param,
   Post,
   Body,
-} from '@nestjs/common';
-import {
-  ApiOperation,
-  ApiParam,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
-import { ZodValidationPipe } from '@wahyubucil/nestjs-zod-openapi';
+} from "@nestjs/common";
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ZodValidationPipe } from "@wahyubucil/nestjs-zod-openapi";
 
-import { HttpBadRequestResponse } from '../common/responses/http-bad-request.response';
-import { HttpNotFoundResponse } from '../common/responses/http-not-found.response';
-import { PurchaseOrderResponse } from './responses/purchase-order.response';
-import { CreatePurchaseOrderDto } from './schemas/create-purchase-order.dto';
-import { PurchaseOrdersService } from './purchase-orders.service';
+import { HttpBadRequestResponse } from "../common/responses/http-bad-request.response";
+import { HttpNotFoundResponse } from "../common/responses/http-not-found.response";
+import { PurchaseOrderResponse } from "./responses/purchase-order.response";
+import { CreatePurchaseOrderDto } from "./schemas/create-purchase-order.dto";
+import { PurchaseOrdersService } from "./purchase-orders.service";
 
-@ApiTags('Purchase orders')
-@Controller('purchase-orders')
+@ApiTags("Purchase orders")
+@Controller("purchase-orders")
 export class PurchaseOrdersController {
   constructor(private readonly purchaseOrdersService: PurchaseOrdersService) {}
 
   @ApiOperation({
-    summary: 'Registra compra de reposição',
+    summary: "Registra compra de reposição",
     description:
-      'Incrementa estoque dos produtos na mesma transação do cadastro.',
+      "Incrementa estoque dos produtos na mesma transação do cadastro.",
   })
   @ApiResponse({
     status: 201,
-    description: 'Pedido criado.',
+    description: "Pedido criado.",
     type: PurchaseOrderResponse,
   })
-  @ApiResponse({ status: 400, description: 'Corpo inválido.' })
+  @ApiResponse({ status: 400, description: "Corpo inválido." })
   @ApiResponse({
     status: 404,
-    description: 'Fornecedor, usuário ou produto não encontrado.',
+    description: "Fornecedor, usuário ou produto não encontrado.",
     type: HttpNotFoundResponse,
   })
   @Post()
@@ -51,7 +46,7 @@ export class PurchaseOrdersController {
     return this.purchaseOrdersService.create(dto);
   }
 
-  @ApiOperation({ summary: 'Lista pedidos de compra' })
+  @ApiOperation({ summary: "Lista pedidos de compra" })
   @ApiResponse({
     status: 200,
     type: PurchaseOrderResponse,
@@ -62,26 +57,26 @@ export class PurchaseOrdersController {
     return this.purchaseOrdersService.findAll();
   }
 
-  @ApiOperation({ summary: 'Obtém pedido de compra por id' })
-  @ApiParam({ name: 'id', description: 'CUID do pedido' })
+  @ApiOperation({ summary: "Obtém pedido de compra por id" })
+  @ApiParam({ name: "id", description: "CUID do pedido" })
   @ApiResponse({ status: 200, type: PurchaseOrderResponse })
   @ApiResponse({ status: 404, type: HttpNotFoundResponse })
-  @Get(':id')
-  findOne(@Param('id') id: string): Promise<PurchaseOrderResponse> {
+  @Get(":id")
+  findOne(@Param("id") id: string): Promise<PurchaseOrderResponse> {
     return this.purchaseOrdersService.findOne(id);
   }
 
   @ApiOperation({
-    summary: 'Remove pedido de compra',
+    summary: "Remove pedido de compra",
     description:
-      'Estorna a entrada de estoque vinculada ao pedido (transação única).',
+      "Estorna a entrada de estoque vinculada ao pedido (transação única).",
   })
-  @ApiParam({ name: 'id', description: 'CUID do pedido' })
+  @ApiParam({ name: "id", description: "CUID do pedido" })
   @ApiResponse({ status: 200, type: PurchaseOrderResponse })
   @ApiResponse({ status: 400, type: HttpBadRequestResponse })
   @ApiResponse({ status: 404, type: HttpNotFoundResponse })
-  @Delete(':id')
-  remove(@Param('id') id: string): Promise<PurchaseOrderResponse> {
+  @Delete(":id")
+  remove(@Param("id") id: string): Promise<PurchaseOrderResponse> {
     return this.purchaseOrdersService.remove(id);
   }
 }

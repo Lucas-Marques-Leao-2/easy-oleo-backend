@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { Customer, CustomerPhone, Prisma } from '@prisma/client';
+import { Injectable } from "@nestjs/common";
+import { Customer, CustomerPhone, Prisma } from "@prisma/client";
 
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateCustomerDto } from './schemas/create-customer.dto';
-import { UpdateCustomerDto } from './schemas/update-customer.dto';
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateCustomerDto } from "./schemas/create-customer.dto";
+import { UpdateCustomerDto } from "./schemas/update-customer.dto";
 
 export type CustomerWithPhones = Customer & { phones: CustomerPhone[] };
 
@@ -12,7 +12,7 @@ export class CustomersRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   create(dto: CreateCustomerDto): Promise<CustomerWithPhones> {
-    const type = dto.type ?? 'PF';
+    const type = dto.type ?? "PF";
     const phonesInput = dto.phones;
 
     return this.prisma.customer.create({
@@ -40,7 +40,7 @@ export class CustomersRepository {
 
   findAll(): Promise<CustomerWithPhones[]> {
     return this.prisma.customer.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: { phones: true },
     });
   }
@@ -56,10 +56,7 @@ export class CustomersRepository {
     return this.prisma.customer.findUnique({ where: { document } });
   }
 
-  update(
-    id: string,
-    dto: UpdateCustomerDto,
-  ): Promise<CustomerWithPhones> {
+  update(id: string, dto: UpdateCustomerDto): Promise<CustomerWithPhones> {
     const data: Prisma.CustomerUpdateInput = {};
     if (dto.type !== undefined) data.type = dto.type;
     if (dto.name !== undefined) data.name = dto.name;

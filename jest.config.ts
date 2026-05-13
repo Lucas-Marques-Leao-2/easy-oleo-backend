@@ -5,7 +5,7 @@ const config: Config = {
   rootDir: ".",
   setupFiles: ["<rootDir>/jest.setup.ts"],
   testEnvironment: "node",
-  testRegex: "src/.*\\.spec\\.ts$",
+  testRegex: "tests/.*\\.spec\\.ts$",
   transform: {
     "^.+\\.(t|j)s$": [
       "ts-jest",

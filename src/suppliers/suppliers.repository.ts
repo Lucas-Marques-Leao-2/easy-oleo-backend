@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma, Supplier, SupplierPhone } from '@prisma/client';
+import { Injectable } from "@nestjs/common";
+import { Prisma, Supplier, SupplierPhone } from "@prisma/client";
 
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateSupplierDto } from './schemas/create-supplier.dto';
-import { UpdateSupplierDto } from './schemas/update-supplier.dto';
+import { PrismaService } from "../prisma/prisma.service";
+import { CreateSupplierDto } from "./schemas/create-supplier.dto";
+import { UpdateSupplierDto } from "./schemas/update-supplier.dto";
 
 export type SupplierWithPhones = Supplier & { phones: SupplierPhone[] };
 
@@ -38,7 +38,7 @@ export class SuppliersRepository {
 
   findAll(): Promise<SupplierWithPhones[]> {
     return this.prisma.supplier.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: { phones: true },
     });
   }

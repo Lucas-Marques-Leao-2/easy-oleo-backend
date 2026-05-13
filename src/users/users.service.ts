@@ -1,20 +1,20 @@
-import * as bcrypt from 'bcryptjs';
+import * as bcrypt from "bcryptjs";
 import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
+} from "@nestjs/common";
 
-import { throwConflictIfUniqueViolation } from '../lib/prisma-unique.util';
-import { UserResponse } from './responses/user.response';
-import { CreateUserDto } from './schemas/create-user.dto';
-import { UpdateUserDto } from './schemas/update-user.dto';
-import { UsersRepository } from './users.repository';
+import { throwConflictIfUniqueViolation } from "../lib/prisma-unique.util";
+import { UserResponse } from "./responses/user.response";
+import { CreateUserDto } from "./schemas/create-user.dto";
+import { UpdateUserDto } from "./schemas/update-user.dto";
+import { UsersRepository } from "./users.repository";
 
 const SALT_ROUNDS = 10;
 
 function toResponse(
-  row: Awaited<ReturnType<UsersRepository['findById']>>,
+  row: Awaited<ReturnType<UsersRepository["findById"]>>,
 ): UserResponse {
   if (!row) throw new NotFoundException();
   return {
@@ -42,10 +42,10 @@ export class UsersService {
 
   async create(dto: CreateUserDto): Promise<UserResponse> {
     if (await this.repo.findByCpf(dto.cpf)) {
-      throw new ConflictException('Este CPF já está cadastrado.');
+      throw new ConflictException("Este CPF já está cadastrado.");
     }
     if (await this.repo.findByEmail(dto.email)) {
-      throw new ConflictException('Este e-mail já está em uso.');
+      throw new ConflictException("Este e-mail já está em uso.");
     }
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
     try {
@@ -62,7 +62,7 @@ export class UsersService {
           zipCode: dto.zipCode,
           email: dto.email,
           passwordHash,
-          role: dto.role ?? 'ATTENDANT',
+          role: dto.role ?? "ATTENDANT",
         },
         dto.phones,
       );
@@ -80,7 +80,7 @@ export class UsersService {
 
   async findOne(id: string): Promise<UserResponse> {
     const row = await this.repo.findById(id);
-    if (!row) throw new NotFoundException('Usuário não encontrado.');
+    if (!row) throw new NotFoundException("Usuário não encontrado.");
     return toResponse(row);
   }
 
@@ -89,11 +89,11 @@ export class UsersService {
     if (dto.email) {
       const u = await this.repo.findByEmail(dto.email);
       if (u && u.id !== id) {
-        throw new ConflictException('Este e-mail já está em uso.');
+        throw new ConflictException("Este e-mail já está em uso.");
       }
     }
 
-    const data: Parameters<UsersRepository['update']>[1] = {};
+    const data: Parameters<UsersRepository["update"]>[1] = {};
     if (dto.name !== undefined) data.name = dto.name;
     if (dto.street !== undefined) data.street = dto.street;
     if (dto.number !== undefined) data.number = dto.number;

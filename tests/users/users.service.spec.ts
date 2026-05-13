@@ -1,8 +1,8 @@
 import * as bcrypt from "bcryptjs";
 import { ConflictException, NotFoundException } from "@nestjs/common";
 
-import { UsersRepository } from "./users.repository";
-import { UsersService } from "./users.service";
+import { UsersRepository } from "../../src/users/users.repository";
+import { UsersService } from "../../src/users/users.service";
 
 const now = new Date("2026-04-20T10:00:00.000Z");
 

@@ -1,8 +1,8 @@
 import { ConflictException, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 
-import { ProductsRepository } from "./products.repository";
-import { ProductsService } from "./products.service";
+import { ProductsRepository } from "../../src/products/products.repository";
+import { ProductsService } from "../../src/products/products.service";
 
 const now = new Date("2026-04-20T10:00:00.000Z");
 

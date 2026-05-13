@@ -1,16 +1,16 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from "@nestjs/swagger";
 
 export class SaleOrderItemResponse {
-  @ApiProperty({ example: 'cm8item01abcd' })
+  @ApiProperty({ example: "cm8item01abcd" })
   id: string;
 
-  @ApiProperty({ example: 'cm8prod01abcd' })
+  @ApiProperty({ example: "cm8prod01abcd" })
   productId: string;
 
-  @ApiProperty({ example: 'OLEO-5W30-1L' })
+  @ApiProperty({ example: "OLEO-5W30-1L" })
   productCode: string;
 
-  @ApiProperty({ example: 'Óleo motor 5W30' })
+  @ApiProperty({ example: "Óleo motor 5W30" })
   productName: string;
 
   @ApiProperty({ example: 2 })
@@ -41,7 +41,7 @@ export class SaleOrderResponse {
   @ApiProperty({ example: 191.8 })
   total: number;
 
-  @ApiProperty({ enum: ['DRAFT', 'CONFIRMED', 'CANCELLED'] })
+  @ApiProperty({ enum: ["DRAFT", "CONFIRMED", "CANCELLED"] })
   status: string;
 
   @ApiProperty({ type: SaleOrderPartyResponse })

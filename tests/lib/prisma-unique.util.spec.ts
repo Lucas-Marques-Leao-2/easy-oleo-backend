@@ -1,7 +1,7 @@
 import { ConflictException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 
-import { throwConflictIfUniqueViolation } from "./prisma-unique.util";
+import { throwConflictIfUniqueViolation } from "../../src/lib/prisma-unique.util";
 
 function uniqueError(target: string | string[]) {
   return new Prisma.PrismaClientKnownRequestError("Unique failed", {
