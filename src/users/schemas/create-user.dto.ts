@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { createZodDto } from "@wahyubucil/nestjs-zod-openapi";
+import { nestZodDto } from "../../lib/nest-zod-dto";
 
 import { zCpfDigitsString } from "../../lib/zod-brazilian-doc";
 
@@ -54,5 +54,4 @@ export interface CreateUserDto {
   [key: string]: any;
 }
 
-// @ts-expect-error createZodDto returns a dynamic constructor used by Nest at runtime.
-export class CreateUserDto extends createZodDto(createUserDto) {}
+export class CreateUserDto extends nestZodDto(createUserDto) {}

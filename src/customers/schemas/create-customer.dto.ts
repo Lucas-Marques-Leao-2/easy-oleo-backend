@@ -1,7 +1,6 @@
 import { z } from "zod";
 
-import { createZodDto } from "@wahyubucil/nestjs-zod-openapi";
-
+import { nestZodDto } from "../../lib/nest-zod-dto";
 import { zCustomerDocumentDigitsString } from "../../lib/zod-brazilian-doc";
 
 const phoneRegex = /^\d{11}$/;
@@ -101,5 +100,4 @@ export interface CreateCustomerDto {
   [key: string]: any;
 }
 
-// @ts-expect-error createZodDto returns a dynamic constructor used by Nest at runtime.
-export class CreateCustomerDto extends createZodDto(createCustomerDto) {}
+export class CreateCustomerDto extends nestZodDto(createCustomerDto) {}

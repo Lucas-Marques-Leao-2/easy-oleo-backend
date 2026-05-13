@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { createZodDto } from "@wahyubucil/nestjs-zod-openapi";
+import { nestZodDto } from "../../lib/nest-zod-dto";
 
 export const purchaseOrderLineBase = z.object({
   productId: z.string().min(1).openapi({ example: "cm8prod01abcd" }),
@@ -33,7 +33,6 @@ export interface CreatePurchaseOrderDto {
   [key: string]: any;
 }
 
-// @ts-expect-error createZodDto returns a dynamic constructor used by Nest at runtime.
-export class CreatePurchaseOrderDto extends createZodDto(
+export class CreatePurchaseOrderDto extends nestZodDto(
   createPurchaseOrderDto,
 ) {}
