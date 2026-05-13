@@ -1,8 +1,11 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-import { createZodDto } from '@wahyubucil/nestjs-zod-openapi';
+import { nestZodDto } from "../../lib/nest-zod-dto";
 
-import { createSaleOrderDtoBase, saleOrderLineBase } from './create-sale-order.dto';
+import {
+  createSaleOrderDtoBase,
+  saleOrderLineBase,
+} from "./create-sale-order.dto";
 
 export const updateSaleOrderDto = createSaleOrderDtoBase
   .omit({ createdByUserId: true })
@@ -10,12 +13,16 @@ export const updateSaleOrderDto = createSaleOrderDtoBase
   .extend({
     items: z.array(saleOrderLineBase).min(1).optional(),
   })
-  .openapi('UpdateSaleOrderDto', {
+  .openapi("UpdateSaleOrderDto", {
     example: {
-      orderDate: new Date('2026-04-20'),
-      customerId: 'cm8cust02abcd',
-      items: [{ productId: 'cm8prod01abcd', quantity: 3 }],
-    },
+      orderDate: new Date("2026-04-20"),
+      customerId: "cm8cust02abcd",
+      items: [{ productId: "cm8prod01abcd", quantity: 3 }],
+    } as any,
   });
 
-export class UpdateSaleOrderDto extends createZodDto(updateSaleOrderDto) {}
+export interface UpdateSaleOrderDto {
+  [key: string]: any;
+}
+
+export class UpdateSaleOrderDto extends nestZodDto(updateSaleOrderDto) {}

@@ -2,18 +2,15 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { Prisma, SaleOrderStatus } from '@prisma/client';
+} from "@nestjs/common";
+import { Prisma, SaleOrderStatus } from "@prisma/client";
 
-import { PrismaService } from '../prisma/prisma.service';
-import { ProductsRepository } from '../products/products.repository';
-import { SaleOrderResponse } from './responses/sale-order.response';
-import { CreateSaleOrderDto } from './schemas/create-sale-order.dto';
-import { UpdateSaleOrderDto } from './schemas/update-sale-order.dto';
-import {
-  SaleOrdersRepository,
-  SaleOrderFull,
-} from './sale-orders.repository';
+import { PrismaService } from "../prisma/prisma.service";
+import { ProductsRepository } from "../products/products.repository";
+import { SaleOrderResponse } from "./responses/sale-order.response";
+import { CreateSaleOrderDto } from "./schemas/create-sale-order.dto";
+import { UpdateSaleOrderDto } from "./schemas/update-sale-order.dto";
+import { SaleOrdersRepository, SaleOrderFull } from "./sale-orders.repository";
 
 function toResponse(row: SaleOrderFull): SaleOrderResponse {
   return {
@@ -81,13 +78,13 @@ export class SaleOrdersService {
       where: { id: dto.customerId },
     });
     if (!customer) {
-      throw new NotFoundException('Cliente não encontrado.');
+      throw new NotFoundException("Cliente não encontrado.");
     }
     const user = await this.prisma.user.findUnique({
       where: { id: dto.createdByUserId },
     });
     if (!user) {
-      throw new NotFoundException('Usuário (criador) não encontrado.');
+      throw new NotFoundException("Usuário (criador) não encontrado.");
     }
 
     const { total, creates } = await this.buildLines(
@@ -113,16 +110,20 @@ export class SaleOrdersService {
 
   async findOne(id: string): Promise<SaleOrderResponse> {
     const row = await this.repo.findById(id);
-    if (!row) throw new NotFoundException('Pedido de venda não encontrado.');
+    if (!row) throw new NotFoundException("Pedido de venda não encontrado.");
     return toResponse(row);
   }
 
-  async update(id: string, dto: UpdateSaleOrderDto): Promise<SaleOrderResponse> {
+  async update(
+    id: string,
+    dto: UpdateSaleOrderDto,
+  ): Promise<SaleOrderResponse> {
     const existing = await this.repo.findById(id);
-    if (!existing) throw new NotFoundException('Pedido de venda não encontrado.');
+    if (!existing)
+      throw new NotFoundException("Pedido de venda não encontrado.");
     if (existing.status !== SaleOrderStatus.DRAFT) {
       throw new BadRequestException(
-        'Só é possível editar pedido em rascunho (DRAFT).',
+        "Só é possível editar pedido em rascunho (DRAFT).",
       );
     }
 
@@ -139,7 +140,7 @@ export class SaleOrdersService {
       const c = await this.prisma.customer.findUnique({
         where: { id: dto.customerId },
       });
-      if (!c) throw new NotFoundException('Cliente não encontrado.');
+      if (!c) throw new NotFoundException("Cliente não encontrado.");
     }
 
     if (dto.items && dto.items.length > 0) {
@@ -166,7 +167,7 @@ export class SaleOrdersService {
               include: {
                 product: { select: { id: true, code: true, name: true } },
               },
-              orderBy: { id: 'asc' },
+              orderBy: { id: "asc" },
             },
           },
         });
@@ -188,10 +189,11 @@ export class SaleOrdersService {
 
   async remove(id: string): Promise<SaleOrderResponse> {
     const existing = await this.repo.findById(id);
-    if (!existing) throw new NotFoundException('Pedido de venda não encontrado.');
+    if (!existing)
+      throw new NotFoundException("Pedido de venda não encontrado.");
     if (existing.status !== SaleOrderStatus.DRAFT) {
       throw new BadRequestException(
-        'Só é possível excluir pedido em rascunho (DRAFT).',
+        "Só é possível excluir pedido em rascunho (DRAFT).",
       );
     }
     const row = await this.repo.remove(id);
@@ -200,10 +202,10 @@ export class SaleOrdersService {
 
   async confirm(id: string): Promise<SaleOrderResponse> {
     const order = await this.repo.findById(id);
-    if (!order) throw new NotFoundException('Pedido de venda não encontrado.');
+    if (!order) throw new NotFoundException("Pedido de venda não encontrado.");
     if (order.status !== SaleOrderStatus.DRAFT) {
       throw new BadRequestException(
-        'Só é possível confirmar pedido em rascunho (DRAFT).',
+        "Só é possível confirmar pedido em rascunho (DRAFT).",
       );
     }
 
@@ -212,7 +214,8 @@ export class SaleOrdersService {
         where: { id },
         include: { items: true },
       });
-      if (!fresh) throw new NotFoundException('Pedido de venda não encontrado.');
+      if (!fresh)
+        throw new NotFoundException("Pedido de venda não encontrado.");
       for (const item of fresh.items) {
         try {
           await this.productsRepo.updateStockTx(
@@ -221,7 +224,7 @@ export class SaleOrdersService {
             item.quantity.mul(-1),
           );
         } catch (e) {
-          if (e instanceof Error && e.message === 'Estoque insuficiente.') {
+          if (e instanceof Error && e.message === "Estoque insuficiente.") {
             throw new BadRequestException(e.message);
           }
           throw e;
@@ -234,15 +237,15 @@ export class SaleOrdersService {
     });
 
     const row = await this.repo.findById(id);
-    if (!row) throw new NotFoundException('Pedido de venda não encontrado.');
+    if (!row) throw new NotFoundException("Pedido de venda não encontrado.");
     return toResponse(row);
   }
 
   async cancel(id: string): Promise<SaleOrderResponse> {
     const order = await this.repo.findById(id);
-    if (!order) throw new NotFoundException('Pedido de venda não encontrado.');
+    if (!order) throw new NotFoundException("Pedido de venda não encontrado.");
     if (order.status === SaleOrderStatus.CANCELLED) {
-      throw new BadRequestException('Pedido já está cancelado.');
+      throw new BadRequestException("Pedido já está cancelado.");
     }
 
     if (order.status === SaleOrderStatus.DRAFT) {
@@ -257,7 +260,8 @@ export class SaleOrdersService {
         where: { id },
         include: { items: true },
       });
-      if (!fresh) throw new NotFoundException('Pedido de venda não encontrado.');
+      if (!fresh)
+        throw new NotFoundException("Pedido de venda não encontrado.");
       for (const item of fresh.items) {
         await this.productsRepo.updateStockTx(
           tx,
@@ -272,7 +276,7 @@ export class SaleOrdersService {
     });
 
     const row = await this.repo.findById(id);
-    if (!row) throw new NotFoundException('Pedido de venda não encontrado.');
+    if (!row) throw new NotFoundException("Pedido de venda não encontrado.");
     return toResponse(row);
   }
 }

@@ -1,25 +1,25 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from "@nestjs/swagger";
 
 export class ProductResponse {
-  @ApiProperty({ example: 'cm8prod01abcd' })
+  @ApiProperty({ example: "cm8prod01abcd" })
   id: string;
 
-  @ApiProperty({ example: 'OLEO-5W30-1L' })
+  @ApiProperty({ example: "OLEO-5W30-1L" })
   code: string;
 
-  @ApiProperty({ example: 'Óleo motor sintético 5W30' })
+  @ApiProperty({ example: "Óleo motor sintético 5W30" })
   name: string;
 
-  @ApiProperty({ example: 'Mobil' })
+  @ApiProperty({ example: "Mobil" })
   brand: string;
 
-  @ApiProperty({ example: 'óleo lubrificante' })
+  @ApiProperty({ example: "óleo lubrificante" })
   type: string;
 
-  @ApiProperty({ required: false, nullable: true, example: '5W-30' })
+  @ApiProperty({ required: false, nullable: true, example: "5W-30" })
   viscosity: string | null;
 
-  @ApiProperty({ example: 'L' })
+  @ApiProperty({ example: "L" })
   unit: string;
 
   @ApiProperty({ example: 45.9 })
@@ -31,9 +31,9 @@ export class ProductResponse {
   @ApiProperty({ example: 24 })
   minStock: number;
 
-  @ApiProperty({ example: '2026-01-01T12:00:00.000Z' })
+  @ApiProperty({ example: "2026-01-01T12:00:00.000Z" })
   createdAt: Date;
 
-  @ApiProperty({ example: '2026-01-02T12:00:00.000Z' })
+  @ApiProperty({ example: "2026-01-02T12:00:00.000Z" })
   updatedAt: Date;
 }

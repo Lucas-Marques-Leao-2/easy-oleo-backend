@@ -2,14 +2,14 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { Product } from '@prisma/client';
+} from "@nestjs/common";
+import { Product } from "@prisma/client";
 
-import { throwConflictIfUniqueViolation } from '../lib/prisma-unique.util';
-import { ProductResponse } from './responses/product.response';
-import { CreateProductDto } from './schemas/create-product.dto';
-import { UpdateProductDto } from './schemas/update-product.dto';
-import { ProductsRepository } from './products.repository';
+import { throwConflictIfUniqueViolation } from "../lib/prisma-unique.util";
+import { ProductResponse } from "./responses/product.response";
+import { CreateProductDto } from "./schemas/create-product.dto";
+import { UpdateProductDto } from "./schemas/update-product.dto";
+import { ProductsRepository } from "./products.repository";
 
 function toResponse(p: Product): ProductResponse {
   return {
@@ -34,7 +34,7 @@ export class ProductsService {
 
   async create(dto: CreateProductDto): Promise<ProductResponse> {
     const exists = await this.repo.findByCode(dto.code);
-    if (exists) throw new ConflictException('Este código já está em uso.');
+    if (exists) throw new ConflictException("Este código já está em uso.");
     try {
       const p = await this.repo.create(dto);
       return toResponse(p);
@@ -51,7 +51,7 @@ export class ProductsService {
 
   async findOne(id: string): Promise<ProductResponse> {
     const p = await this.repo.findById(id);
-    if (!p) throw new NotFoundException('Produto não encontrado.');
+    if (!p) throw new NotFoundException("Produto não encontrado.");
     return toResponse(p);
   }
 
@@ -60,7 +60,7 @@ export class ProductsService {
     if (dto.code) {
       const other = await this.repo.findByCode(dto.code);
       if (other && other.id !== id) {
-        throw new ConflictException('Este código já está em uso.');
+        throw new ConflictException("Este código já está em uso.");
       }
     }
     try {

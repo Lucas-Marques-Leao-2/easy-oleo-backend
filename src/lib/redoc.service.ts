@@ -1,68 +1,68 @@
-import { NestjsRedoxModule, type RedocOptions } from 'nestjs-redox';
+import { NestjsRedoxModule, type RedocOptions } from "nestjs-redox";
 
-import type { INestApplication } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { patchNestjsSwagger } from '@wahyubucil/nestjs-zod-openapi';
+import type { INestApplication } from "@nestjs/common";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { patchNestjsSwagger } from "@wahyubucil/nestjs-zod-openapi";
 
 export async function setupRedoc(app: INestApplication) {
   const builder = new DocumentBuilder()
-    .setTitle('Easy Óleo API')
+    .setTitle("Easy Óleo API")
     .setDescription(
-      'Distribuição de óleo automotivo. Os schemas gerados a partir dos DTOs são consumidos no frontend via Orval/OpenAPI.',
+      "Distribuição de óleo automotivo. Os schemas gerados a partir dos DTOs são consumidos no frontend via Orval/OpenAPI.",
     )
-    .setVersion('1.0')
+    .setVersion("1.0")
     .addBearerAuth(
       {
-        bearerFormat: 'JWT',
-        scheme: 'bearer',
-        type: 'http',
+        bearerFormat: "JWT",
+        scheme: "bearer",
+        type: "http",
       },
-      'access-token',
+      "access-token",
     );
 
-  patchNestjsSwagger({ schemasSort: 'alpha' });
+  patchNestjsSwagger({ schemasSort: "alpha" });
 
   const document = SwaggerModule.createDocument(app, builder.build());
 
   const redocOptions: RedocOptions = {
     hideHostname: false,
     logo: {
-      altText: 'NestJS',
-      backgroundColor: '#f0f2f5',
-      url: 'https://nestjs.com/img/logo-small.svg',
+      altText: "NestJS",
+      backgroundColor: "#f0f2f5",
+      url: "https://nestjs.com/img/logo-small.svg",
     },
     pathInMiddlePanel: true,
     requiredPropsFirst: true,
     sortPropsAlphabetically: true,
     theme: {
       logo: {
-        gutter: '10px',
-        maxHeight: '50px',
-        maxWidth: '50px',
+        gutter: "10px",
+        maxHeight: "50px",
+        maxWidth: "50px",
       },
       rightPanel: {
-        backgroundColor: '#545659',
+        backgroundColor: "#545659",
       },
       sidebar: {
-        backgroundColor: '#f0f2f5',
+        backgroundColor: "#f0f2f5",
       },
       typography: {
-        fontFamily: 'Roboto, sans-serif',
-        fontSize: '16px',
-        fontWeightBold: '900',
+        fontFamily: "Roboto, sans-serif",
+        fontSize: "16px",
+        fontWeightBold: "900",
         headings: {
-          fontFamily: 'Montserrat, sans-serif',
-          fontWeight: '700',
-          lineHeight: '1.6em',
+          fontFamily: "Montserrat, sans-serif",
+          fontWeight: "700",
+          lineHeight: "1.6em",
         },
         optimizeSpeed: true,
-        smoothing: 'antialiased',
+        smoothing: "antialiased",
       },
     },
   };
 
   NestjsRedoxModule.setup(
-    '/docs',
+    "/docs",
     app,
     document,
     {
@@ -72,5 +72,5 @@ export async function setupRedoc(app: INestApplication) {
     redocOptions,
   );
 
-  SwaggerModule.setup('swagger', app, document);
+  SwaggerModule.setup("swagger", app, document);
 }

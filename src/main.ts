@@ -1,15 +1,15 @@
-import '@wahyubucil/nestjs-zod-openapi/boot';
+import "@wahyubucil/nestjs-zod-openapi/boot";
 
-import { NestFactory } from '@nestjs/core';
+import { NestFactory } from "@nestjs/core";
 
-import { AppModule } from './app.module';
-import { setupRedoc } from './lib/redoc.service';
+import { AppModule } from "./app.module";
+import { setupRedoc } from "./lib/redoc.service";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',').map((s) => s.trim()) ?? true,
+    origin: process.env.CORS_ORIGIN?.split(",").map((s) => s.trim()) ?? true,
   });
 
   await setupRedoc(app);

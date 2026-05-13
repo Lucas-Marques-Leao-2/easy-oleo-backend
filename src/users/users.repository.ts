@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma, User, UserPhone } from '@prisma/client';
+import { Injectable } from "@nestjs/common";
+import { Prisma, User, UserPhone } from "@prisma/client";
 
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from "../prisma/prisma.service";
 
 export type UserWithPhones = User & { phones: UserPhone[] };
 
@@ -26,7 +26,7 @@ export class UsersRepository {
 
   findAll(): Promise<UserWithPhones[]> {
     return this.prisma.user.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: { phones: true },
     });
   }

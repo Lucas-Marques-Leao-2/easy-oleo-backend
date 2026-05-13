@@ -1,24 +1,28 @@
-import { createZodDto } from '@wahyubucil/nestjs-zod-openapi';
+import { nestZodDto } from "../../lib/nest-zod-dto";
 
-import { createCustomerDtoBase } from './create-customer.dto';
+import { createCustomerDtoBase } from "./create-customer.dto";
 
 export const updateCustomerDto = createCustomerDtoBase
   .omit({ document: true })
   .partial()
-  .openapi('UpdateCustomerDto', {
+  .openapi("UpdateCustomerDto", {
     example: {
-      type: 'PJ',
-      name: 'Auto Peças Maceió — filial Sul',
-      street: 'Rua do Comércio',
-      number: '1200',
-      complement: 'Loja 3',
-      district: 'Jaraguá',
-      city: 'Maceió',
-      state: 'AL',
-      zipCode: '57022120',
-      email: 'sul@autopecasmaceio.com.br',
-      phones: ['82987654321'],
-    },
+      type: "PJ",
+      name: "Auto Peças Maceió — filial Sul",
+      street: "Rua do Comércio",
+      number: "1200",
+      complement: "Loja 3",
+      district: "Jaraguá",
+      city: "Maceió",
+      state: "AL",
+      zipCode: "57022120",
+      email: "sul@autopecasmaceio.com.br",
+      phones: ["82987654321"],
+    } as any,
   });
 
-export class UpdateCustomerDto extends createZodDto(updateCustomerDto) {}
+export interface UpdateCustomerDto {
+  [key: string]: any;
+}
+
+export class UpdateCustomerDto extends nestZodDto(updateCustomerDto) {}
