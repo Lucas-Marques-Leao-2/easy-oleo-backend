@@ -1,52 +1,87 @@
-import { z } from "zod";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { UserRole } from "@prisma/client";
+import {
+  IsArray,
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  MinLength,
+} from "class-validator";
 
-import { nestZodDto } from "../../lib/nest-zod-dto";
+import { IsCpf } from "../../common/validators/brazilian-doc.validators";
+import {
+  BRAZILIAN_PHONE_MESSAGE,
+  BRAZILIAN_PHONE_REGEX,
+} from "../../common/validators/phone.validators";
 
-import { zCpfDigitsString } from "../../lib/zod-brazilian-doc";
+export class CreateUserDto {
+  @ApiProperty({ example: "Carla Administradora" })
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
 
-const phoneRegex = /^\d{11}$/;
-
-export const createUserDtoBase = z.object({
-  name: z.string().min(1).openapi({ example: "Carla Administradora" }),
-  cpf: zCpfDigitsString().openapi({
+  @ApiProperty({
     description: "CPF com 11 dígitos e dígitos verificadores válidos.",
     example: "52998224725",
-  }),
-  street: z.string().min(1).openapi({ example: "Rua Principal" }),
-  number: z.string().min(1).openapi({ example: "100" }),
-  complement: z.string().optional().openapi({ example: "Sala 1" }),
-  district: z.string().optional().openapi({ example: "Centro" }),
-  city: z.string().min(1).openapi({ example: "Maceió" }),
-  state: z.string().length(2).openapi({ example: "AL" }),
-  zipCode: z.string().min(8).openapi({ example: "57020000" }),
-  email: z.string().email().openapi({ example: "carla@easyoleo.local" }),
-  role: z
-    .enum(["ATTENDANT", "SELLER", "ADMIN"])
-    .optional()
-    .openapi({ example: "ADMIN" }),
-  phones: z
-    .array(z.string().regex(phoneRegex))
-    .optional()
-    .openapi({ example: ["82991112233"] }),
-});
+  })
+  @IsCpf()
+  cpf!: string;
 
-export const createUserDto = createUserDtoBase.openapi("CreateUserDto", {
-  example: {
-    name: "Carla Administradora",
-    cpf: "52998224725",
-    street: "Rua Principal",
-    number: "100",
-    city: "Maceió",
-    state: "AL",
-    zipCode: "57020000",
-    email: "carla@easyoleo.local",
-    role: "ADMIN",
-    phones: ["82991112233"],
-  } as any,
-});
+  @ApiProperty({ example: "Rua Principal" })
+  @IsString()
+  @IsNotEmpty()
+  street!: string;
 
-export interface CreateUserDto {
-  [key: string]: any;
+  @ApiProperty({ example: "100" })
+  @IsString()
+  @IsNotEmpty()
+  number!: string;
+
+  @ApiPropertyOptional({ example: "Sala 1" })
+  @IsOptional()
+  @IsString()
+  complement?: string;
+
+  @ApiPropertyOptional({ example: "Centro" })
+  @IsOptional()
+  @IsString()
+  district?: string;
+
+  @ApiProperty({ example: "Maceió" })
+  @IsString()
+  @IsNotEmpty()
+  city!: string;
+
+  @ApiProperty({ example: "AL" })
+  @IsString()
+  @Length(2, 2)
+  state!: string;
+
+  @ApiProperty({ example: "57020000" })
+  @IsString()
+  @MinLength(8)
+  zipCode!: string;
+
+  @ApiProperty({ example: "carla@easyoleo.local" })
+  @IsEmail()
+  email!: string;
+
+  @ApiPropertyOptional({ enum: UserRole, example: UserRole.ADMIN })
+  @IsOptional()
+  @IsEnum(UserRole)
+  role?: UserRole;
+
+  @ApiPropertyOptional({ example: ["82991112233"] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @Matches(BRAZILIAN_PHONE_REGEX, {
+    each: true,
+    message: BRAZILIAN_PHONE_MESSAGE,
+  })
+  phones?: string[];
 }
-
-export class CreateUserDto extends nestZodDto(createUserDto) {}

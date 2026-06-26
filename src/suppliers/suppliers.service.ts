@@ -66,7 +66,11 @@ export class SuppliersService {
   async update(id: string, dto: UpdateSupplierDto): Promise<SupplierResponse> {
     await this.findOne(id);
     try {
-      const row = await this.suppliersRepository.update(id, dto);
+      const row = await this.suppliersRepository.update(
+        id,
+        dto,
+        dto.phones === undefined ? undefined : dto.phones,
+      );
       return toResponse(row);
     } catch (error) {
       throwConflictIfUniqueViolation(error);

@@ -1,6 +1,5 @@
-import "@wahyubucil/nestjs-zod-openapi/boot";
-
 import { clerkMiddleware } from "@clerk/express";
+import { ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 
@@ -20,6 +19,15 @@ async function bootstrap() {
       }),
     );
   }
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  );
 
   app.enableCors({
     origin: process.env.CORS_ORIGIN?.split(",").map((s) => s.trim()) ?? true,

@@ -1,38 +1,51 @@
-import { z } from "zod";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Type } from "class-transformer";
+import {
+  ArrayMinSize,
+  IsArray,
+  IsDate,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  ValidateNested,
+} from "class-validator";
 
-import { nestZodDto } from "../../lib/nest-zod-dto";
+import { PurchaseOrderLineDto } from "./purchase-order-line.dto";
 
-export const purchaseOrderLineBase = z.object({
-  productId: z.string().min(1).openapi({ example: "cm8prod01abcd" }),
-  quantity: z.coerce.number().positive().openapi({ example: 48 }),
-  unitCost: z.coerce.number().nonnegative().openapi({ example: 32.5 }),
-});
+const CUID_PATTERN = /^c[a-z0-9]+$/;
 
-export const createPurchaseOrderDtoBase = z.object({
-  purchaseDate: z.coerce.date().optional(),
-  supplierId: z.string().min(1).openapi({ example: "cm8sup01abcd" }),
-  registeredByUserId: z.string().min(1).openapi({ example: "cm8user01abcd" }),
-  items: z.array(purchaseOrderLineBase).min(1).openapi({
+export class CreatePurchaseOrderDto {
+  @ApiPropertyOptional({
+    description: "Data da compra; default agora.",
+    type: String,
+    format: "date-time",
+  })
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  purchaseDate?: Date;
+
+  @ApiProperty({ example: "cm8sup01abcd" })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(CUID_PATTERN, { message: "ID de fornecedor inválido." })
+  supplierId!: string;
+
+  @ApiProperty({ example: "cm8user01abcd" })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(CUID_PATTERN, { message: "ID de usuário inválido." })
+  registeredByUserId!: string;
+
+  @ApiProperty({
     description:
       "Ao registrar a compra, o estoque dos produtos é incrementado.",
-  }),
-});
-
-export const createPurchaseOrderDto = createPurchaseOrderDtoBase.openapi(
-  "CreatePurchaseOrderDto",
-  {
-    example: {
-      supplierId: "cm8sup01abcd",
-      registeredByUserId: "cm8user01abcd",
-      items: [{ productId: "cm8prod01abcd", quantity: 48, unitCost: 32.5 }],
-    } as any,
-  },
-);
-
-export interface CreatePurchaseOrderDto {
-  [key: string]: any;
+    type: [PurchaseOrderLineDto],
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => PurchaseOrderLineDto)
+  items!: PurchaseOrderLineDto[];
 }
-
-export class CreatePurchaseOrderDto extends nestZodDto(
-  createPurchaseOrderDto,
-) {}

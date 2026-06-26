@@ -3,20 +3,19 @@ import {
   type CanActivate,
   type ExecutionContext,
   Injectable,
-  InternalServerErrorException,
   UnauthorizedException,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import type { UserRole } from "@prisma/client";
 
-import { PrismaService } from "../prisma/prisma.service";
+import { AuthContextService } from "./auth-context.service";
 import { ROLES_KEY } from "./roles.decorator";
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly prisma: PrismaService,
+    private readonly authContext: AuthContextService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -35,22 +34,8 @@ export class RolesGuard implements CanActivate {
       throw new UnauthorizedException("Usuário não autenticado.");
     }
 
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { externalId: auth.userId },
-      });
-
-      if (!user) {
-        throw new UnauthorizedException("Usuário não encontrado.");
-      }
-
-      request.role = user.role;
-      return requiredRoles.some((role) => role === user.role);
-    } catch (error) {
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      }
-      throw new InternalServerErrorException("Erro ao verificar permissões.");
-    }
+    const role = await this.authContext.resolveRoleByExternalId(auth.userId);
+    request.role = role;
+    return requiredRoles.some((required) => required === role);
   }
 }

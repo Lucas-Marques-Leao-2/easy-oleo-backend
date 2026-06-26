@@ -1,41 +1,63 @@
-import { z } from "zod";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Type } from "class-transformer";
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  Min,
+} from "class-validator";
 
-import { nestZodDto } from "../../lib/nest-zod-dto";
-
-export const createProductDtoBase = z.object({
-  code: z.string().min(1).openapi({
+export class CreateProductDto {
+  @ApiProperty({
     description: "Código único do produto.",
     example: "OLEO-5W30-1L",
-  }),
-  name: z.string().min(1).openapi({ example: "Óleo motor sintético 5W30" }),
-  brand: z.string().min(1).openapi({ example: "Mobil" }),
-  type: z.string().min(1).openapi({ example: "óleo lubrificante" }),
-  viscosity: z.string().optional().openapi({ example: "5W-30" }),
-  unit: z.string().min(1).openapi({ example: "L" }),
-  salePrice: z.coerce.number().positive().openapi({ example: 45.9 }),
-  stockQuantity: z.coerce.number().nonnegative().openapi({ example: 120 }),
-  minStock: z.coerce.number().nonnegative().openapi({ example: 24 }),
-});
+  })
+  @IsString()
+  @IsNotEmpty()
+  code!: string;
 
-export const createProductDto = createProductDtoBase.openapi(
-  "CreateProductDto",
-  {
-    example: {
-      code: "OLEO-5W30-1L",
-      name: "Óleo motor sintético 5W30",
-      brand: "Mobil",
-      type: "óleo lubrificante",
-      viscosity: "5W-30",
-      unit: "L",
-      salePrice: 45.9,
-      stockQuantity: 120,
-      minStock: 24,
-    } as any,
-  },
-);
+  @ApiProperty({ example: "Óleo motor sintético 5W30" })
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
 
-export interface CreateProductDto {
-  [key: string]: any;
+  @ApiProperty({ example: "Mobil" })
+  @IsString()
+  @IsNotEmpty()
+  brand!: string;
+
+  @ApiProperty({ example: "óleo lubrificante" })
+  @IsString()
+  @IsNotEmpty()
+  type!: string;
+
+  @ApiPropertyOptional({ example: "5W-30" })
+  @IsOptional()
+  @IsString()
+  viscosity?: string;
+
+  @ApiProperty({ example: "L" })
+  @IsString()
+  @IsNotEmpty()
+  unit!: string;
+
+  @ApiProperty({ example: 45.9 })
+  @Type(() => Number)
+  @IsNumber()
+  @IsPositive()
+  salePrice!: number;
+
+  @ApiProperty({ example: 120 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  stockQuantity!: number;
+
+  @ApiProperty({ example: 24 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  minStock!: number;
 }
-
-export class CreateProductDto extends nestZodDto(createProductDto) {}

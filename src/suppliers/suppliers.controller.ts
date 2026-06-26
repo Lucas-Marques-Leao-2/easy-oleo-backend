@@ -11,9 +11,9 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { ZodValidationPipe } from "@wahyubucil/nestjs-zod-openapi";
 
 import { ClerkAuthGuard } from "../auth/clerk-auth.guard";
+import { CuidParamDto } from "../common/dto/cuid-param.dto";
 import { HttpConflictResponse } from "../common/responses/http-conflict.response";
 import { HttpNotFoundResponse } from "../common/responses/http-not-found.response";
 import { SupplierResponse } from "./responses/supplier.response";
@@ -45,9 +45,7 @@ export class SuppliersController {
   })
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(
-    @Body(ZodValidationPipe) dto: CreateSupplierDto,
-  ): Promise<SupplierResponse> {
+  create(@Body() dto: CreateSupplierDto): Promise<SupplierResponse> {
     return this.suppliersService.create(dto);
   }
 
@@ -76,8 +74,8 @@ export class SuppliersController {
     type: HttpNotFoundResponse,
   })
   @Get(":id")
-  findOne(@Param("id") id: string): Promise<SupplierResponse> {
-    return this.suppliersService.findOne(id);
+  findOne(@Param() params: CuidParamDto): Promise<SupplierResponse> {
+    return this.suppliersService.findOne(params.id);
   }
 
   @ApiOperation({
@@ -98,10 +96,10 @@ export class SuppliersController {
   })
   @Patch(":id")
   update(
-    @Param("id") id: string,
-    @Body(ZodValidationPipe) dto: UpdateSupplierDto,
+    @Param() params: CuidParamDto,
+    @Body() dto: UpdateSupplierDto,
   ): Promise<SupplierResponse> {
-    return this.suppliersService.update(id, dto);
+    return this.suppliersService.update(params.id, dto);
   }
 
   @ApiOperation({ summary: "Remove fornecedor" })
@@ -117,7 +115,7 @@ export class SuppliersController {
     type: HttpNotFoundResponse,
   })
   @Delete(":id")
-  remove(@Param("id") id: string): Promise<SupplierResponse> {
-    return this.suppliersService.remove(id);
+  remove(@Param() params: CuidParamDto): Promise<SupplierResponse> {
+    return this.suppliersService.remove(params.id);
   }
 }

@@ -10,9 +10,9 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { ZodValidationPipe } from "@wahyubucil/nestjs-zod-openapi";
 
 import { ClerkAuthGuard } from "../auth/clerk-auth.guard";
+import { CuidParamDto } from "../common/dto/cuid-param.dto";
 import { HttpBadRequestResponse } from "../common/responses/http-bad-request.response";
 import { HttpNotFoundResponse } from "../common/responses/http-not-found.response";
 import { PurchaseOrderResponse } from "./responses/purchase-order.response";
@@ -43,9 +43,7 @@ export class PurchaseOrdersController {
   })
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(
-    @Body(ZodValidationPipe) dto: CreatePurchaseOrderDto,
-  ): Promise<PurchaseOrderResponse> {
+  create(@Body() dto: CreatePurchaseOrderDto): Promise<PurchaseOrderResponse> {
     return this.purchaseOrdersService.create(dto);
   }
 
@@ -65,8 +63,8 @@ export class PurchaseOrdersController {
   @ApiResponse({ status: 200, type: PurchaseOrderResponse })
   @ApiResponse({ status: 404, type: HttpNotFoundResponse })
   @Get(":id")
-  findOne(@Param("id") id: string): Promise<PurchaseOrderResponse> {
-    return this.purchaseOrdersService.findOne(id);
+  findOne(@Param() params: CuidParamDto): Promise<PurchaseOrderResponse> {
+    return this.purchaseOrdersService.findOne(params.id);
   }
 
   @ApiOperation({
@@ -79,7 +77,7 @@ export class PurchaseOrdersController {
   @ApiResponse({ status: 400, type: HttpBadRequestResponse })
   @ApiResponse({ status: 404, type: HttpNotFoundResponse })
   @Delete(":id")
-  remove(@Param("id") id: string): Promise<PurchaseOrderResponse> {
-    return this.purchaseOrdersService.remove(id);
+  remove(@Param() params: CuidParamDto): Promise<PurchaseOrderResponse> {
+    return this.purchaseOrdersService.remove(params.id);
   }
 }

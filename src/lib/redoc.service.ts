@@ -2,7 +2,6 @@ import { NestjsRedoxModule, type RedocOptions } from "nestjs-redox";
 
 import type { INestApplication } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
-import { patchNestjsSwagger } from "@wahyubucil/nestjs-zod-openapi";
 
 export async function setupRedoc(app: INestApplication) {
   const builder = new DocumentBuilder()
@@ -19,8 +18,6 @@ export async function setupRedoc(app: INestApplication) {
       },
       "access-token",
     );
-
-  patchNestjsSwagger({ schemasSort: "alpha" });
 
   const document = SwaggerModule.createDocument(app, builder.build());
 

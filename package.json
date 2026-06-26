@@ -35,16 +35,16 @@
     "@nestjs/swagger": "^8.1.1",
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
-    "@wahyubucil/nestjs-zod-openapi": "^0.1.2",
     "axios": "^1.15.0",
     "bcryptjs": "^3.0.3",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
     "nestjs-redox": "^1.4.2",
     "pg": "^8.20.0",
     "redoc": "^2.5.2",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
-    "svix": "^1.93.0",
-    "zod": "^3.25.76"
+    "svix": "^1.93.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

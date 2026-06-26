@@ -12,6 +12,7 @@ import { SaleOrdersController } from "../src/sale-orders/sale-orders.controller"
 import { SaleOrdersService } from "../src/sale-orders/sale-orders.service";
 import { SuppliersController } from "../src/suppliers/suppliers.controller";
 import { SuppliersService } from "../src/suppliers/suppliers.service";
+import { ClerkWebhookService } from "../src/users/clerk-webhook.service";
 import { UsersController } from "../src/users/users.controller";
 import { UsersService } from "../src/users/users.service";
 
@@ -25,6 +26,8 @@ function crudServiceMock(result: unknown) {
   };
 }
 
+type ParamId = { id: string };
+
 describe("CRUD controllers", () => {
   it.each([
     [CustomersController, CustomersService],
@@ -36,9 +39,18 @@ describe("CRUD controllers", () => {
     async (Controller, Service) => {
       const result = { id: "entity-1" };
       const service = crudServiceMock(result);
+      const providers: { provide: unknown; useValue: unknown }[] = [
+        { provide: Service, useValue: service },
+      ];
+      if (Controller === UsersController) {
+        providers.push({
+          provide: ClerkWebhookService,
+          useValue: { process: jest.fn() },
+        });
+      }
       const moduleRef = await Test.createTestingModule({
         controllers: [Controller],
-        providers: [{ provide: Service, useValue: service }],
+        providers,
       })
         .overrideGuard(ClerkAuthGuard)
         .useValue({ canActivate: () => true })
@@ -48,18 +60,20 @@ describe("CRUD controllers", () => {
       const controller = moduleRef.get(Controller) as {
         create: (dto: unknown) => Promise<unknown>;
         findAll: () => Promise<unknown>;
-        findOne: (id: string) => Promise<unknown>;
-        update: (id: string, dto: unknown) => Promise<unknown>;
-        remove: (id: string) => Promise<unknown>;
+        findOne: (params: ParamId) => Promise<unknown>;
+        update: (params: ParamId, dto: unknown) => Promise<unknown>;
+        remove: (params: ParamId) => Promise<unknown>;
       };
 
       await expect(controller.create({ name: "A" })).resolves.toBe(result);
       await expect(controller.findAll()).resolves.toEqual([result]);
-      await expect(controller.findOne("entity-1")).resolves.toBe(result);
-      await expect(controller.update("entity-1", { name: "B" })).resolves.toBe(
+      await expect(controller.findOne({ id: "entity-1" })).resolves.toBe(
         result,
       );
-      await expect(controller.remove("entity-1")).resolves.toBe(result);
+      await expect(
+        controller.update({ id: "entity-1" }, { name: "B" }),
+      ).resolves.toBe(result);
+      await expect(controller.remove({ id: "entity-1" })).resolves.toBe(result);
 
       expect(service.create).toHaveBeenCalledWith({ name: "A" });
       expect(service.findAll).toHaveBeenCalledWith();
@@ -93,13 +107,21 @@ describe("SaleOrdersController", () => {
       controller.create({ customerId: "customer-1" } as never),
     ).resolves.toBe(result);
     await expect(controller.findAll()).resolves.toEqual([result]);
-    await expect(controller.findOne("sale-order-1")).resolves.toBe(result);
+    await expect(controller.findOne({ id: "sale-order-1" })).resolves.toBe(
+      result,
+    );
     await expect(
-      controller.update("sale-order-1", { items: [] } as never),
+      controller.update({ id: "sale-order-1" }, { items: [] } as never),
     ).resolves.toBe(result);
-    await expect(controller.remove("sale-order-1")).resolves.toBe(result);
-    await expect(controller.confirm("sale-order-1")).resolves.toBe(result);
-    await expect(controller.cancel("sale-order-1")).resolves.toBe(result);
+    await expect(controller.remove({ id: "sale-order-1" })).resolves.toBe(
+      result,
+    );
+    await expect(controller.confirm({ id: "sale-order-1" })).resolves.toBe(
+      result,
+    );
+    await expect(controller.cancel({ id: "sale-order-1" })).resolves.toBe(
+      result,
+    );
 
     expect(service.confirm).toHaveBeenCalledWith("sale-order-1");
     expect(service.cancel).toHaveBeenCalledWith("sale-order-1");
@@ -130,8 +152,12 @@ describe("PurchaseOrdersController", () => {
       controller.create({ supplierId: "supplier-1" } as never),
     ).resolves.toBe(result);
     await expect(controller.findAll()).resolves.toEqual([result]);
-    await expect(controller.findOne("purchase-order-1")).resolves.toBe(result);
-    await expect(controller.remove("purchase-order-1")).resolves.toBe(result);
+    await expect(controller.findOne({ id: "purchase-order-1" })).resolves.toBe(
+      result,
+    );
+    await expect(controller.remove({ id: "purchase-order-1" })).resolves.toBe(
+      result,
+    );
 
     expect(service.create).toHaveBeenCalledWith({ supplierId: "supplier-1" });
     expect(service.findOne).toHaveBeenCalledWith("purchase-order-1");

@@ -11,9 +11,9 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { ZodValidationPipe } from "@wahyubucil/nestjs-zod-openapi";
 
 import { ClerkAuthGuard } from "../auth/clerk-auth.guard";
+import { CuidParamDto } from "../common/dto/cuid-param.dto";
 import { HttpConflictResponse } from "../common/responses/http-conflict.response";
 import { HttpNotFoundResponse } from "../common/responses/http-not-found.response";
 import { CustomerResponse } from "./responses/customer.response";
@@ -45,9 +45,7 @@ export class CustomersController {
   })
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(
-    @Body(ZodValidationPipe) dto: CreateCustomerDto,
-  ): Promise<CustomerResponse> {
+  create(@Body() dto: CreateCustomerDto): Promise<CustomerResponse> {
     return this.customersService.create(dto);
   }
 
@@ -76,8 +74,8 @@ export class CustomersController {
     type: HttpNotFoundResponse,
   })
   @Get(":id")
-  findOne(@Param("id") id: string): Promise<CustomerResponse> {
-    return this.customersService.findOne(id);
+  findOne(@Param() params: CuidParamDto): Promise<CustomerResponse> {
+    return this.customersService.findOne(params.id);
   }
 
   @ApiOperation({
@@ -98,10 +96,10 @@ export class CustomersController {
   })
   @Patch(":id")
   update(
-    @Param("id") id: string,
-    @Body(ZodValidationPipe) dto: UpdateCustomerDto,
+    @Param() params: CuidParamDto,
+    @Body() dto: UpdateCustomerDto,
   ): Promise<CustomerResponse> {
-    return this.customersService.update(id, dto);
+    return this.customersService.update(params.id, dto);
   }
 
   @ApiOperation({ summary: "Remove customer" })
@@ -117,7 +115,7 @@ export class CustomersController {
     type: HttpNotFoundResponse,
   })
   @Delete(":id")
-  remove(@Param("id") id: string): Promise<CustomerResponse> {
-    return this.customersService.remove(id);
+  remove(@Param() params: CuidParamDto): Promise<CustomerResponse> {
+    return this.customersService.remove(params.id);
   }
 }

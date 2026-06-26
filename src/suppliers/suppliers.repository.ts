@@ -54,7 +54,11 @@ export class SuppliersRepository {
     return this.prisma.supplier.findUnique({ where: { cnpj } });
   }
 
-  update(id: string, dto: UpdateSupplierDto): Promise<SupplierWithPhones> {
+  async update(
+    id: string,
+    dto: UpdateSupplierDto,
+    phoneNumbers?: string[] | null,
+  ): Promise<SupplierWithPhones> {
     const data: Prisma.SupplierUpdateInput = {};
     if (dto.legalName !== undefined) data.legalName = dto.legalName;
     if (dto.street !== undefined) data.street = dto.street;
@@ -65,6 +69,21 @@ export class SuppliersRepository {
     if (dto.state !== undefined) data.state = dto.state;
     if (dto.zipCode !== undefined) data.zipCode = dto.zipCode;
     if (dto.email !== undefined) data.email = dto.email;
+
+    if (phoneNumbers !== undefined) {
+      await this.prisma.supplierPhone.deleteMany({ where: { supplierId: id } });
+      return this.prisma.supplier.update({
+        where: { id },
+        data: {
+          ...data,
+          phones:
+            phoneNumbers.length > 0
+              ? { create: phoneNumbers.map((number) => ({ number })) }
+              : undefined,
+        },
+        include: { phones: true },
+      });
+    }
 
     return this.prisma.supplier.update({
       where: { id },

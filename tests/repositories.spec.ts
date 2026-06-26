@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 
+import { InsufficientStockException } from "../src/common/exceptions/insufficient-stock.exception";
 import { CustomersRepository } from "../src/customers/customers.repository";
 import { PrismaService } from "../src/prisma/prisma.service";
 import { ProductsRepository } from "../src/products/products.repository";
@@ -221,7 +222,7 @@ describe("Repositories", () => {
         "product-1",
         new Prisma.Decimal("-10"),
       ),
-    ).rejects.toThrow("Estoque insuficiente.");
+    ).rejects.toBeInstanceOf(InsufficientStockException);
   });
 
   it("SaleOrdersRepository and PurchaseOrdersRepository use full include shapes", async () => {

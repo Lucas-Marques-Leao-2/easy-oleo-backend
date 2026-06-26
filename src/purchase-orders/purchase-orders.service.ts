@@ -3,10 +3,13 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
 
+import { InsufficientStockException } from "../common/exceptions/insufficient-stock.exception";
+import { OrderLinesService } from "../common/services/order-lines.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ProductsRepository } from "../products/products.repository";
+import { SuppliersRepository } from "../suppliers/suppliers.repository";
+import { UsersRepository } from "../users/users.repository";
 import { PurchaseOrderResponse } from "./responses/purchase-order.response";
 import { CreatePurchaseOrderDto } from "./schemas/create-purchase-order.dto";
 import {
@@ -41,56 +44,19 @@ export class PurchaseOrdersService {
     private readonly prisma: PrismaService,
     private readonly repo: PurchaseOrdersRepository,
     private readonly productsRepo: ProductsRepository,
+    private readonly suppliersRepo: SuppliersRepository,
+    private readonly usersRepo: UsersRepository,
+    private readonly orderLines: OrderLinesService,
   ) {}
 
-  private async buildLines(
-    items: {
-      productId: string;
-      quantity: number;
-      unitCost: number;
-    }[],
-  ): Promise<{
-    total: Prisma.Decimal;
-    creates: Prisma.PurchaseOrderItemCreateWithoutPurchaseOrderInput[];
-  }> {
-    let total = new Prisma.Decimal(0);
-    const creates: Prisma.PurchaseOrderItemCreateWithoutPurchaseOrderInput[] =
-      [];
-
-    for (const line of items) {
-      const product = await this.productsRepo.findById(line.productId);
-      if (!product) {
-        throw new NotFoundException(
-          `Produto não encontrado: ${line.productId}.`,
-        );
-      }
-      const qty = new Prisma.Decimal(String(line.quantity));
-      const unitCost = new Prisma.Decimal(String(line.unitCost));
-      const subtotal = qty.mul(unitCost);
-      total = total.plus(subtotal);
-      creates.push({
-        quantity: qty,
-        unitCost,
-        subtotal,
-        product: { connect: { id: product.id } },
-      });
-    }
-
-    return { total, creates };
-  }
-
   async create(dto: CreatePurchaseOrderDto): Promise<PurchaseOrderResponse> {
-    const supplier = await this.prisma.supplier.findUnique({
-      where: { id: dto.supplierId },
-    });
+    const supplier = await this.suppliersRepo.findById(dto.supplierId);
     if (!supplier) throw new NotFoundException("Fornecedor não encontrado.");
-    const user = await this.prisma.user.findUnique({
-      where: { id: dto.registeredByUserId },
-    });
+    const user = await this.usersRepo.findById(dto.registeredByUserId);
     if (!user) throw new NotFoundException("Usuário não encontrado.");
 
-    const { total, creates } = await this.buildLines(
-      dto.items as { productId: string; quantity: number; unitCost: number }[],
+    const { total, creates } = await this.orderLines.buildPurchaseLines(
+      dto.items,
     );
 
     const row = await this.prisma.$transaction(async (tx) => {
@@ -122,7 +88,7 @@ export class PurchaseOrdersService {
             item.quantity,
           );
         } catch (e) {
-          if (e instanceof Error && e.message === "Estoque insuficiente.") {
+          if (e instanceof InsufficientStockException) {
             throw new BadRequestException(e.message);
           }
           throw e;
@@ -160,7 +126,7 @@ export class PurchaseOrdersService {
             item.quantity.mul(-1),
           );
         } catch (e) {
-          if (e instanceof Error && e.message === "Estoque insuficiente.") {
+          if (e instanceof InsufficientStockException) {
             throw new BadRequestException(
               "Não é possível excluir: estoque atual ficaria negativo.",
             );

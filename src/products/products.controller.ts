@@ -11,9 +11,9 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { ZodValidationPipe } from "@wahyubucil/nestjs-zod-openapi";
 
 import { ClerkAuthGuard } from "../auth/clerk-auth.guard";
+import { CuidParamDto } from "../common/dto/cuid-param.dto";
 import { HttpConflictResponse } from "../common/responses/http-conflict.response";
 import { HttpNotFoundResponse } from "../common/responses/http-not-found.response";
 import { ProductResponse } from "./responses/product.response";
@@ -36,9 +36,7 @@ export class ProductsController {
   @ApiResponse({ status: 409, type: HttpConflictResponse })
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(
-    @Body(ZodValidationPipe) dto: CreateProductDto,
-  ): Promise<ProductResponse> {
+  create(@Body() dto: CreateProductDto): Promise<ProductResponse> {
     return this.productsService.create(dto);
   }
 
@@ -54,8 +52,8 @@ export class ProductsController {
   @ApiResponse({ status: 200, type: ProductResponse })
   @ApiResponse({ status: 404, type: HttpNotFoundResponse })
   @Get(":id")
-  findOne(@Param("id") id: string): Promise<ProductResponse> {
-    return this.productsService.findOne(id);
+  findOne(@Param() params: CuidParamDto): Promise<ProductResponse> {
+    return this.productsService.findOne(params.id);
   }
 
   @ApiOperation({ summary: "Atualiza produto" })
@@ -65,10 +63,10 @@ export class ProductsController {
   @ApiResponse({ status: 409, type: HttpConflictResponse })
   @Patch(":id")
   update(
-    @Param("id") id: string,
-    @Body(ZodValidationPipe) dto: UpdateProductDto,
+    @Param() params: CuidParamDto,
+    @Body() dto: UpdateProductDto,
   ): Promise<ProductResponse> {
-    return this.productsService.update(id, dto);
+    return this.productsService.update(params.id, dto);
   }
 
   @ApiOperation({ summary: "Remove produto" })
@@ -76,7 +74,7 @@ export class ProductsController {
   @ApiResponse({ status: 200, type: ProductResponse })
   @ApiResponse({ status: 404, type: HttpNotFoundResponse })
   @Delete(":id")
-  remove(@Param("id") id: string): Promise<ProductResponse> {
-    return this.productsService.remove(id);
+  remove(@Param() params: CuidParamDto): Promise<ProductResponse> {
+    return this.productsService.remove(params.id);
   }
 }

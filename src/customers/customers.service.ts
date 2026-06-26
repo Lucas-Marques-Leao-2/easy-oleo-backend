@@ -69,7 +69,11 @@ export class CustomersService {
   async update(id: string, dto: UpdateCustomerDto): Promise<CustomerResponse> {
     await this.findOne(id);
     try {
-      const row = await this.customersRepository.update(id, dto);
+      const row = await this.customersRepository.update(
+        id,
+        dto,
+        dto.phones === undefined ? undefined : dto.phones,
+      );
       return toResponse(row);
     } catch (error) {
       throwConflictIfUniqueViolation(error);

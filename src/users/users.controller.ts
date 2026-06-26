@@ -14,14 +14,15 @@ import {
 } from "@nestjs/common";
 import { UserRole } from "@prisma/client";
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { ZodValidationPipe } from "@wahyubucil/nestjs-zod-openapi";
 
 import { ClerkAuthGuard } from "../auth/clerk-auth.guard";
 import { Public } from "../auth/public.decorator";
 import { Roles } from "../auth/roles.decorator";
 import { RolesGuard } from "../auth/roles.guard";
+import { CuidParamDto } from "../common/dto/cuid-param.dto";
 import { HttpConflictResponse } from "../common/responses/http-conflict.response";
 import { HttpNotFoundResponse } from "../common/responses/http-not-found.response";
+import { ClerkWebhookService } from "./clerk-webhook.service";
 import { UserResponse } from "./responses/user.response";
 import { CreateUserDto } from "./schemas/create-user.dto";
 import { UpdateUserDto } from "./schemas/update-user.dto";
@@ -31,7 +32,10 @@ import { UsersService } from "./users.service";
 @Controller("users")
 @UseGuards(ClerkAuthGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly clerkWebhookService: ClerkWebhookService,
+  ) {}
 
   @ApiOperation({
     summary: "Cadastra usuário",
@@ -53,7 +57,7 @@ export class UsersController {
   @Roles(UserRole.ADMIN)
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body(ZodValidationPipe) dto: CreateUserDto): Promise<UserResponse> {
+  create(@Body() dto: CreateUserDto): Promise<UserResponse> {
     return this.usersService.create(dto);
   }
 
@@ -80,7 +84,7 @@ export class UsersController {
     ) {
       throw new BadRequestException("Headers necessários não fornecidos.");
     }
-    await this.usersService.processClerkWebhook(
+    await this.clerkWebhookService.process(
       body,
       svixId,
       svixTimestamp,
@@ -115,8 +119,8 @@ export class UsersController {
     type: HttpNotFoundResponse,
   })
   @Get(":id")
-  findOne(@Param("id") id: string): Promise<UserResponse> {
-    return this.usersService.findOne(id);
+  findOne(@Param() params: CuidParamDto): Promise<UserResponse> {
+    return this.usersService.findOne(params.id);
   }
 
   @ApiOperation({
@@ -142,10 +146,10 @@ export class UsersController {
   })
   @Patch(":id")
   update(
-    @Param("id") id: string,
-    @Body(ZodValidationPipe) dto: UpdateUserDto,
+    @Param() params: CuidParamDto,
+    @Body() dto: UpdateUserDto,
   ): Promise<UserResponse> {
-    return this.usersService.update(id, dto);
+    return this.usersService.update(params.id, dto);
   }
 
   @ApiOperation({ summary: "Remove usuário" })
@@ -163,7 +167,7 @@ export class UsersController {
   @Delete(":id")
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
-  remove(@Param("id") id: string): Promise<UserResponse> {
-    return this.usersService.remove(id);
+  remove(@Param() params: CuidParamDto): Promise<UserResponse> {
+    return this.usersService.remove(params.id);
   }
 }

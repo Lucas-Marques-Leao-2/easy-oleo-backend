@@ -56,7 +56,11 @@ export class CustomersRepository {
     return this.prisma.customer.findUnique({ where: { document } });
   }
 
-  update(id: string, dto: UpdateCustomerDto): Promise<CustomerWithPhones> {
+  async update(
+    id: string,
+    dto: UpdateCustomerDto,
+    phoneNumbers?: string[] | null,
+  ): Promise<CustomerWithPhones> {
     const data: Prisma.CustomerUpdateInput = {};
     if (dto.type !== undefined) data.type = dto.type;
     if (dto.name !== undefined) data.name = dto.name;
@@ -68,6 +72,21 @@ export class CustomersRepository {
     if (dto.state !== undefined) data.state = dto.state;
     if (dto.zipCode !== undefined) data.zipCode = dto.zipCode;
     if (dto.email !== undefined) data.email = dto.email;
+
+    if (phoneNumbers !== undefined) {
+      await this.prisma.customerPhone.deleteMany({ where: { customerId: id } });
+      return this.prisma.customer.update({
+        where: { id },
+        data: {
+          ...data,
+          phones:
+            phoneNumbers.length > 0
+              ? { create: phoneNumbers.map((number) => ({ number })) }
+              : undefined,
+        },
+        include: { phones: true },
+      });
+    }
 
     return this.prisma.customer.update({
       where: { id },

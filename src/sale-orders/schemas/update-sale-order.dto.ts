@@ -1,28 +1,26 @@
-import { z } from "zod";
-
-import { nestZodDto } from "../../lib/nest-zod-dto";
-
+import { ApiPropertyOptional, OmitType, PartialType } from "@nestjs/swagger";
+import { Type } from "class-transformer";
 import {
-  createSaleOrderDtoBase,
-  saleOrderLineBase,
-} from "./create-sale-order.dto";
+  ArrayMinSize,
+  IsArray,
+  IsOptional,
+  ValidateNested,
+} from "class-validator";
 
-export const updateSaleOrderDto = createSaleOrderDtoBase
-  .omit({ createdByUserId: true })
-  .partial()
-  .extend({
-    items: z.array(saleOrderLineBase).min(1).optional(),
+import { CreateSaleOrderDto } from "./create-sale-order.dto";
+import { SaleOrderLineDto } from "./sale-order-line.dto";
+
+export class UpdateSaleOrderDto extends PartialType(
+  OmitType(CreateSaleOrderDto, ["createdByUserId"] as const),
+) {
+  @ApiPropertyOptional({
+    type: [SaleOrderLineDto],
+    description: "Substitui todos os itens do pedido.",
   })
-  .openapi("UpdateSaleOrderDto", {
-    example: {
-      orderDate: new Date("2026-04-20"),
-      customerId: "cm8cust02abcd",
-      items: [{ productId: "cm8prod01abcd", quantity: 3 }],
-    } as any,
-  });
-
-export interface UpdateSaleOrderDto {
-  [key: string]: any;
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => SaleOrderLineDto)
+  declare items?: SaleOrderLineDto[];
 }
-
-export class UpdateSaleOrderDto extends nestZodDto(updateSaleOrderDto) {}

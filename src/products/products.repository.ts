@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { Prisma, Product } from "@prisma/client";
 
 import { PrismaService } from "../prisma/prisma.service";
+import { InsufficientStockException } from "../common/exceptions/insufficient-stock.exception";
 import { CreateProductDto } from "./schemas/create-product.dto";
 import { UpdateProductDto } from "./schemas/update-product.dto";
 
@@ -69,7 +70,7 @@ export class ProductsRepository {
     const p = await tx.product.findUniqueOrThrow({ where: { id: productId } });
     const next = p.stockQuantity.plus(delta);
     if (next.lessThan(0)) {
-      throw new Error("Estoque insuficiente.");
+      throw new InsufficientStockException();
     }
     return tx.product.update({
       where: { id: productId },

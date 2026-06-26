@@ -1,8 +1,12 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Prisma, SaleOrderStatus } from "@prisma/client";
 
+import { InsufficientStockException } from "../../src/common/exceptions/insufficient-stock.exception";
+import { OrderLinesService } from "../../src/common/services/order-lines.service";
+import { CustomersRepository } from "../../src/customers/customers.repository";
 import { PrismaService } from "../../src/prisma/prisma.service";
 import { ProductsRepository } from "../../src/products/products.repository";
+import { UsersRepository } from "../../src/users/users.repository";
 import {
   SaleOrdersRepository,
   SaleOrderFull,
@@ -40,20 +44,19 @@ function saleOrder(overrides: Partial<SaleOrderFull> = {}): SaleOrderFull {
 
 describe("SaleOrdersService", () => {
   let prisma: {
-    customer: { findUnique: jest.Mock };
-    user: { findUnique: jest.Mock };
     saleOrderItem: { deleteMany: jest.Mock };
     saleOrder: { update: jest.Mock; findUnique: jest.Mock };
     $transaction: jest.Mock;
   };
   let repo: jest.Mocked<SaleOrdersRepository>;
   let productsRepo: jest.Mocked<ProductsRepository>;
+  let customersRepo: jest.Mocked<Pick<CustomersRepository, "findById">>;
+  let usersRepo: jest.Mocked<Pick<UsersRepository, "findById">>;
+  let orderLines: jest.Mocked<Pick<OrderLinesService, "buildSaleLines">>;
   let service: SaleOrdersService;
 
   beforeEach(() => {
     prisma = {
-      customer: { findUnique: jest.fn() },
-      user: { findUnique: jest.fn() },
       saleOrderItem: { deleteMany: jest.fn() },
       saleOrder: { update: jest.fn(), findUnique: jest.fn() },
       $transaction: jest.fn((callback) => callback(prisma)),
@@ -69,20 +72,33 @@ describe("SaleOrdersService", () => {
       findById: jest.fn(),
       updateStockTx: jest.fn(),
     } as unknown as jest.Mocked<ProductsRepository>;
+    customersRepo = { findById: jest.fn() };
+    usersRepo = { findById: jest.fn() };
+    orderLines = { buildSaleLines: jest.fn() };
     service = new SaleOrdersService(
       prisma as unknown as PrismaService,
       repo,
       productsRepo,
+      customersRepo as unknown as CustomersRepository,
+      usersRepo as unknown as UsersRepository,
+      orderLines as unknown as OrderLinesService,
     );
   });
 
   it("creates a DRAFT order with current product prices and calculated total", async () => {
-    prisma.customer.findUnique.mockResolvedValue({ id: "customer-1" });
-    prisma.user.findUnique.mockResolvedValue({ id: "user-1" });
-    productsRepo.findById.mockResolvedValue({
-      id: "product-1",
-      salePrice: new Prisma.Decimal("45.9"),
-    } as never);
+    customersRepo.findById.mockResolvedValue({ id: "customer-1" } as never);
+    usersRepo.findById.mockResolvedValue({ id: "user-1" } as never);
+    orderLines.buildSaleLines.mockResolvedValue({
+      total: new Prisma.Decimal("91.8"),
+      creates: [
+        {
+          quantity: new Prisma.Decimal("2"),
+          unitPrice: new Prisma.Decimal("45.9"),
+          subtotal: new Prisma.Decimal("91.8"),
+          product: { connect: { id: "product-1" } },
+        },
+      ],
+    });
     repo.create.mockResolvedValue(saleOrder());
 
     await expect(
@@ -110,7 +126,7 @@ describe("SaleOrdersService", () => {
   });
 
   it("rejects missing related records and missing products", async () => {
-    prisma.customer.findUnique.mockResolvedValueOnce(null);
+    customersRepo.findById.mockResolvedValueOnce(null);
     await expect(
       service.create({
         customerId: "missing",
@@ -119,8 +135,8 @@ describe("SaleOrdersService", () => {
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
 
-    prisma.customer.findUnique.mockResolvedValue({ id: "customer-1" });
-    prisma.user.findUnique.mockResolvedValueOnce(null);
+    customersRepo.findById.mockResolvedValue({ id: "customer-1" } as never);
+    usersRepo.findById.mockResolvedValueOnce(null);
     await expect(
       service.create({
         customerId: "customer-1",
@@ -129,8 +145,10 @@ describe("SaleOrdersService", () => {
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
 
-    prisma.user.findUnique.mockResolvedValue({ id: "user-1" });
-    productsRepo.findById.mockResolvedValue(null);
+    usersRepo.findById.mockResolvedValue({ id: "user-1" } as never);
+    orderLines.buildSaleLines.mockRejectedValue(
+      new NotFoundException("Produto não encontrado: missing-product."),
+    );
     await expect(
       service.create({
         customerId: "customer-1",
@@ -155,10 +173,17 @@ describe("SaleOrdersService", () => {
 
   it("replaces items inside a transaction when updating items", async () => {
     repo.findById.mockResolvedValue(saleOrder());
-    productsRepo.findById.mockResolvedValue({
-      id: "product-1",
-      salePrice: new Prisma.Decimal("45.9"),
-    } as never);
+    orderLines.buildSaleLines.mockResolvedValue({
+      total: new Prisma.Decimal("91.8"),
+      creates: [
+        {
+          quantity: new Prisma.Decimal("2"),
+          unitPrice: new Prisma.Decimal("45.9"),
+          subtotal: new Prisma.Decimal("91.8"),
+          product: { connect: { id: "product-1" } },
+        },
+      ],
+    });
     prisma.saleOrder.update.mockResolvedValue(saleOrder());
 
     await expect(
@@ -184,7 +209,7 @@ describe("SaleOrdersService", () => {
       items: [{ productId: "product-1", quantity: new Prisma.Decimal("2") }],
     });
     productsRepo.updateStockTx.mockRejectedValueOnce(
-      new Error("Estoque insuficiente."),
+      new InsufficientStockException(),
     );
 
     await expect(service.confirm("sale-order-1")).rejects.toBeInstanceOf(

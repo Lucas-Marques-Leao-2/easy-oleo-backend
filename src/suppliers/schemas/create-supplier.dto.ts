@@ -1,93 +1,99 @@
-import { z } from "zod";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import {
+  IsArray,
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  MaxLength,
+  MinLength,
+} from "class-validator";
 
-import { nestZodDto } from "../../lib/nest-zod-dto";
+import { IsCnpj } from "../../common/validators/brazilian-doc.validators";
+import {
+  BRAZILIAN_PHONE_MESSAGE,
+  BRAZILIAN_PHONE_REGEX,
+} from "../../common/validators/phone.validators";
 
-import { zCnpjDigitsString } from "../../lib/zod-brazilian-doc";
+export class CreateSupplierDto {
+  @ApiProperty({
+    description: "Razão social do fornecedor.",
+    example: "Distribuidora Lubrificantes Nordeste S.A.",
+  })
+  @IsString({ message: "Razão social é obrigatória." })
+  @IsNotEmpty()
+  @MaxLength(300)
+  legalName!: string;
 
-const phoneRegex = /^\d{11}$/;
-
-export const createSupplierDtoBase = z.object({
-  legalName: z
-    .string({ required_error: "Razão social é obrigatória." })
-    .min(1)
-    .max(300)
-    .openapi({
-      description: "Razão social do fornecedor.",
-      example: "Distribuidora Lubrificantes Nordeste S.A.",
-    }),
-  cnpj: zCnpjDigitsString({ required_error: "CNPJ é obrigatório." }).openapi({
+  @ApiProperty({
     description:
       "CNPJ com 14 dígitos e dígitos verificadores válidos, só números.",
     example: "11222333000181",
-  }),
-  street: z
-    .string()
-    .min(1)
-    .openapi({ description: "Logradouro.", example: "Rodovia BR-104" }),
-  number: z
-    .string()
-    .min(1)
-    .openapi({ description: "Número ou referência.", example: "Km 12" }),
-  complement: z
-    .string()
-    .optional()
-    .openapi({ description: "Complemento.", example: "Anexo expedição" }),
-  district: z.string().optional().openapi({
+  })
+  @IsCnpj()
+  cnpj!: string;
+
+  @ApiProperty({ description: "Logradouro.", example: "Rodovia BR-104" })
+  @IsString()
+  @IsNotEmpty()
+  street!: string;
+
+  @ApiProperty({ description: "Número ou referência.", example: "Km 12" })
+  @IsString()
+  @IsNotEmpty()
+  number!: string;
+
+  @ApiPropertyOptional({
+    description: "Complemento.",
+    example: "Anexo expedição",
+  })
+  @IsOptional()
+  @IsString()
+  complement?: string;
+
+  @ApiPropertyOptional({
     description: "Bairro ou distrito.",
     example: "Tabuleiro do Martins",
-  }),
-  city: z
-    .string()
-    .min(1)
-    .openapi({ description: "Cidade.", example: "Maceió" }),
-  state: z
-    .string()
-    .min(2)
-    .max(2)
-    .openapi({ description: "UF (2 letras).", example: "AL" }),
-  zipCode: z
-    .string()
-    .min(8)
-    .max(9)
-    .openapi({ description: "CEP.", example: "57081065" }),
-  email: z.string().email({ message: "E-mail inválido." }).openapi({
+  })
+  @IsOptional()
+  @IsString()
+  district?: string;
+
+  @ApiProperty({ description: "Cidade.", example: "Maceió" })
+  @IsString()
+  @IsNotEmpty()
+  city!: string;
+
+  @ApiProperty({ description: "UF (2 letras).", example: "AL" })
+  @IsString()
+  @Length(2, 2)
+  state!: string;
+
+  @ApiProperty({ description: "CEP.", example: "57081065" })
+  @IsString()
+  @MinLength(8)
+  @MaxLength(9)
+  zipCode!: string;
+
+  @ApiProperty({
     description: "E-mail comercial.",
     example: "vendas@lubnordeste.com.br",
-  }),
-  phones: z
-    .array(
-      z
-        .string()
-        .regex(phoneRegex, { message: "Telefone: 11 dígitos com DDD." }),
-    )
-    .optional()
-    .openapi({
-      description: "Telefones com DDD (11 dígitos).",
-      example: ["82988887777", "82334567890"],
-    }),
-});
+  })
+  @IsEmail({}, { message: "E-mail inválido." })
+  email!: string;
 
-export const createSupplierDto = createSupplierDtoBase.openapi(
-  "CreateSupplierDto",
-  {
-    example: {
-      legalName: "Distribuidora Lubrificantes Nordeste S.A.",
-      cnpj: "11222333000181",
-      street: "Rodovia BR-104",
-      number: "Km 12",
-      complement: "Anexo expedição",
-      district: "Tabuleiro do Martins",
-      city: "Maceió",
-      state: "AL",
-      zipCode: "57081065",
-      email: "vendas@lubnordeste.com.br",
-      phones: ["82988887777", "82334567890"],
-    } as any,
-  },
-);
-
-export interface CreateSupplierDto {
-  [key: string]: any;
+  @ApiPropertyOptional({
+    description: "Telefones com DDD (11 dígitos).",
+    example: ["82988887777", "82334567890"],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @Matches(BRAZILIAN_PHONE_REGEX, {
+    each: true,
+    message: BRAZILIAN_PHONE_MESSAGE,
+  })
+  phones?: string[];
 }
-
-export class CreateSupplierDto extends nestZodDto(createSupplierDto) {}

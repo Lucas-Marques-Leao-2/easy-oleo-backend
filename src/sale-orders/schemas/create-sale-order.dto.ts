@@ -1,36 +1,50 @@
-import { z } from "zod";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Type } from "class-transformer";
+import {
+  ArrayMinSize,
+  IsArray,
+  IsDate,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  ValidateNested,
+} from "class-validator";
 
-import { nestZodDto } from "../../lib/nest-zod-dto";
+import { SaleOrderLineDto } from "./sale-order-line.dto";
 
-export const saleOrderLineBase = z.object({
-  productId: z.string().min(1).openapi({ example: "cm8prod01abcd" }),
-  quantity: z.coerce.number().positive().openapi({ example: 2 }),
-});
+const CUID_PATTERN = /^c[a-z0-9]+$/;
 
-export const createSaleOrderDtoBase = z.object({
-  orderDate: z.coerce.date().optional().openapi({
+export class CreateSaleOrderDto {
+  @ApiPropertyOptional({
     description: "Data do pedido; default agora.",
-  }),
-  customerId: z.string().min(1).openapi({ example: "cm8cust01abcd" }),
-  createdByUserId: z.string().min(1).openapi({ example: "cm8user01abcd" }),
-  items: z.array(saleOrderLineBase).min(1).openapi({
+    type: String,
+    format: "date-time",
+  })
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  orderDate?: Date;
+
+  @ApiProperty({ example: "cm8cust01abcd" })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(CUID_PATTERN, { message: "ID de cliente inválido." })
+  customerId!: string;
+
+  @ApiProperty({ example: "cm8user01abcd" })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(CUID_PATTERN, { message: "ID de usuário inválido." })
+  createdByUserId!: string;
+
+  @ApiProperty({
     description: "Itens; preço unitário é o salePrice do produto na criação.",
-  }),
-});
-
-export const createSaleOrderDto = createSaleOrderDtoBase.openapi(
-  "CreateSaleOrderDto",
-  {
-    example: {
-      customerId: "cm8cust01abcd",
-      createdByUserId: "cm8user01abcd",
-      items: [{ productId: "cm8prod01abcd", quantity: 2 }],
-    } as any,
-  },
-);
-
-export interface CreateSaleOrderDto {
-  [key: string]: any;
+    type: [SaleOrderLineDto],
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => SaleOrderLineDto)
+  items!: SaleOrderLineDto[];
 }
-
-export class CreateSaleOrderDto extends nestZodDto(createSaleOrderDto) {}

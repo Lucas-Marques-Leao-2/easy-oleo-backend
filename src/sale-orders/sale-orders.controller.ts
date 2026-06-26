@@ -11,9 +11,9 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { ZodValidationPipe } from "@wahyubucil/nestjs-zod-openapi";
 
 import { ClerkAuthGuard } from "../auth/clerk-auth.guard";
+import { CuidParamDto } from "../common/dto/cuid-param.dto";
 import { HttpBadRequestResponse } from "../common/responses/http-bad-request.response";
 import { HttpNotFoundResponse } from "../common/responses/http-not-found.response";
 import { SaleOrderResponse } from "./responses/sale-order.response";
@@ -45,9 +45,7 @@ export class SaleOrdersController {
   })
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(
-    @Body(ZodValidationPipe) dto: CreateSaleOrderDto,
-  ): Promise<SaleOrderResponse> {
+  create(@Body() dto: CreateSaleOrderDto): Promise<SaleOrderResponse> {
     return this.saleOrdersService.create(dto);
   }
 
@@ -67,8 +65,8 @@ export class SaleOrdersController {
   @ApiResponse({ status: 200, type: SaleOrderResponse })
   @ApiResponse({ status: 404, type: HttpNotFoundResponse })
   @Get(":id")
-  findOne(@Param("id") id: string): Promise<SaleOrderResponse> {
-    return this.saleOrdersService.findOne(id);
+  findOne(@Param() params: CuidParamDto): Promise<SaleOrderResponse> {
+    return this.saleOrdersService.findOne(params.id);
   }
 
   @ApiOperation({
@@ -82,10 +80,10 @@ export class SaleOrdersController {
   @ApiResponse({ status: 404, type: HttpNotFoundResponse })
   @Patch(":id")
   update(
-    @Param("id") id: string,
-    @Body(ZodValidationPipe) dto: UpdateSaleOrderDto,
+    @Param() params: CuidParamDto,
+    @Body() dto: UpdateSaleOrderDto,
   ): Promise<SaleOrderResponse> {
-    return this.saleOrdersService.update(id, dto);
+    return this.saleOrdersService.update(params.id, dto);
   }
 
   @ApiOperation({
@@ -96,8 +94,8 @@ export class SaleOrdersController {
   @ApiResponse({ status: 400, type: HttpBadRequestResponse })
   @ApiResponse({ status: 404, type: HttpNotFoundResponse })
   @Delete(":id")
-  remove(@Param("id") id: string): Promise<SaleOrderResponse> {
-    return this.saleOrdersService.remove(id);
+  remove(@Param() params: CuidParamDto): Promise<SaleOrderResponse> {
+    return this.saleOrdersService.remove(params.id);
   }
 
   @ApiOperation({
@@ -110,8 +108,8 @@ export class SaleOrdersController {
   @ApiResponse({ status: 404, type: HttpNotFoundResponse })
   @Post(":id/confirm")
   @HttpCode(HttpStatus.OK)
-  confirm(@Param("id") id: string): Promise<SaleOrderResponse> {
-    return this.saleOrdersService.confirm(id);
+  confirm(@Param() params: CuidParamDto): Promise<SaleOrderResponse> {
+    return this.saleOrdersService.confirm(params.id);
   }
 
   @ApiOperation({
@@ -125,7 +123,7 @@ export class SaleOrdersController {
   @ApiResponse({ status: 404, type: HttpNotFoundResponse })
   @Post(":id/cancel")
   @HttpCode(HttpStatus.OK)
-  cancel(@Param("id") id: string): Promise<SaleOrderResponse> {
-    return this.saleOrdersService.cancel(id);
+  cancel(@Param() params: CuidParamDto): Promise<SaleOrderResponse> {
+    return this.saleOrdersService.cancel(params.id);
   }
 }
