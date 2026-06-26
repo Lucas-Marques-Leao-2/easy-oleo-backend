@@ -1,8 +1,10 @@
 import * as bcrypt from "bcryptjs";
 import { ConflictException, NotFoundException } from "@nestjs/common";
+import { UserRole } from "@prisma/client";
 
 import { UsersRepository } from "../../src/users/users.repository";
 import { UsersService } from "../../src/users/users.service";
+import { uniquePrismaError } from "../lib/prisma-errors";
 
 const now = new Date("2026-04-20T10:00:00.000Z");
 
@@ -91,6 +93,31 @@ describe("UsersService", () => {
     expect(result).not.toHaveProperty("passwordHash");
   });
 
+  it("creates a user with an explicit role", async () => {
+    const dto = {
+      name: "Admin",
+      cpf: "52998224725",
+      street: "Rua Principal",
+      number: "100",
+      city: "Maceió",
+      state: "AL",
+      zipCode: "57020000",
+      email: "admin@easyoleo.local",
+      role: UserRole.ADMIN,
+    };
+    repo.findByCpf.mockResolvedValue(null);
+    repo.findByEmail.mockResolvedValue(null);
+    repo.create.mockResolvedValue(user({ role: UserRole.ADMIN }) as never);
+
+    await expect(service.create(dto)).resolves.toMatchObject({
+      role: UserRole.ADMIN,
+    });
+    expect(repo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ role: UserRole.ADMIN }),
+      undefined,
+    );
+  });
+
   it("rejects duplicate CPF and duplicate email", async () => {
     repo.findByCpf.mockResolvedValueOnce(user() as never);
     await expect(
@@ -145,6 +172,66 @@ describe("UsersService", () => {
 
     repo.findById.mockResolvedValue(null);
     await expect(service.findOne("missing")).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it("rejects duplicate email on update", async () => {
+    repo.findById.mockResolvedValue(user() as never);
+    repo.findByEmail.mockResolvedValue(
+      user({ id: "other-user", email: "used@example.com" }) as never,
+    );
+
+    await expect(
+      service.update("user-1", { email: "used@example.com" }),
+    ).rejects.toThrow(new ConflictException("Este e-mail já está em uso."));
+    expect(repo.update).not.toHaveBeenCalled();
+  });
+
+  it("maps Prisma unique violations to ConflictException", async () => {
+    repo.findByCpf.mockResolvedValue(null);
+    repo.findByEmail.mockResolvedValue(null);
+    repo.create.mockRejectedValue(uniquePrismaError("cpf"));
+
+    await expect(
+      service.create({
+        cpf: "52998224725",
+        email: "carla@easyoleo.local",
+      } as never),
+    ).rejects.toThrow(new ConflictException("Este CPF já está cadastrado."));
+
+    repo.findById.mockResolvedValue(user() as never);
+    repo.update.mockRejectedValue(uniquePrismaError("email"));
+
+    await expect(
+      service.update("user-1", { email: "duplicado@example.com" }),
+    ).rejects.toThrow(new ConflictException("Este e-mail já está em uso."));
+  });
+
+  it("rethrows non-unique repository errors", async () => {
+    repo.findByCpf.mockResolvedValue(null);
+    repo.findByEmail.mockResolvedValue(null);
+    repo.create.mockRejectedValue(new Error("db failure"));
+
+    await expect(
+      service.create({
+        cpf: "52998224725",
+        email: "carla@easyoleo.local",
+      } as never),
+    ).rejects.toThrow("db failure");
+
+    repo.findById.mockResolvedValue(user() as never);
+    repo.update.mockRejectedValue(new Error("update failed"));
+
+    await expect(service.update("user-1", { name: "Novo" })).rejects.toThrow(
+      "update failed",
+    );
+  });
+
+  it("throws when removing a missing user", async () => {
+    repo.findById.mockResolvedValue(null);
+
+    await expect(service.remove("missing")).rejects.toBeInstanceOf(
       NotFoundException,
     );
   });

@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 
 import { ProductsRepository } from "../../src/products/products.repository";
 import { ProductsService } from "../../src/products/products.service";
+import { uniquePrismaError } from "../lib/prisma-errors";
 
 const now = new Date("2026-04-20T10:00:00.000Z");
 
@@ -102,5 +103,42 @@ describe("ProductsService", () => {
     await expect(service.findOne("missing")).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it("allows updating with the same product code", async () => {
+    repo.findById.mockResolvedValue(product() as never);
+    repo.findByCode.mockResolvedValue(product() as never);
+    repo.update.mockResolvedValue(product({ name: "Updated" }) as never);
+
+    await expect(
+      service.update("product-1", { code: "OLEO-5W30-1L", name: "Updated" }),
+    ).resolves.toMatchObject({ name: "Updated" });
+  });
+
+  it("maps Prisma unique violations to ConflictException", async () => {
+    repo.findByCode.mockResolvedValue(null);
+    repo.create.mockRejectedValue(uniquePrismaError("code"));
+
+    await expect(
+      service.create({ code: "OLEO-5W30-1L" } as never),
+    ).rejects.toThrow(
+      new ConflictException("Este código de produto já está em uso."),
+    );
+
+    repo.findById.mockResolvedValue(product() as never);
+    repo.update.mockRejectedValue(uniquePrismaError("code"));
+
+    await expect(
+      service.update("product-1", { name: "Updated" }),
+    ).rejects.toThrow(
+      new ConflictException("Este código de produto já está em uso."),
+    );
+
+    repo.findById.mockResolvedValue(product() as never);
+    repo.update.mockRejectedValue(new Error("db failure"));
+
+    await expect(
+      service.update("product-1", { name: "Falha" }),
+    ).rejects.toThrow("db failure");
   });
 });

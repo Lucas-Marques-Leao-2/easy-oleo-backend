@@ -193,4 +193,38 @@ describe("PurchaseOrdersService", () => {
       new Prisma.Decimal("-48"),
     );
   });
+
+  it("rethrows non-stock errors during stock updates on create", async () => {
+    suppliersRepo.findById.mockResolvedValue({ id: "supplier-1" } as never);
+    usersRepo.findById.mockResolvedValue({ id: "user-1" } as never);
+    orderLines.buildPurchaseLines.mockResolvedValue({
+      total: new Prisma.Decimal("1560"),
+      creates: [
+        {
+          quantity: new Prisma.Decimal("48"),
+          unitCost: new Prisma.Decimal("32.5"),
+          subtotal: new Prisma.Decimal("1560"),
+          product: { connect: { id: "product-1" } },
+        },
+      ],
+    });
+    prisma.purchaseOrder.create.mockResolvedValue(purchaseOrder());
+    productsRepo.updateStockTx.mockRejectedValue(new Error("db failure"));
+
+    await expect(
+      service.create({
+        supplierId: "supplier-1",
+        registeredByUserId: "user-1",
+        items: [{ productId: "product-1", quantity: 48, unitCost: 32.5 }],
+      }),
+    ).rejects.toThrow("db failure");
+  });
+
+  it("rejects remove when purchase order is missing", async () => {
+    repo.findById.mockResolvedValue(null);
+
+    await expect(service.remove("missing")).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
 });

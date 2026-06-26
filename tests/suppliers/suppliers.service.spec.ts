@@ -2,6 +2,7 @@ import { ConflictException, NotFoundException } from "@nestjs/common";
 
 import { SuppliersRepository } from "../../src/suppliers/suppliers.repository";
 import { SuppliersService } from "../../src/suppliers/suppliers.service";
+import { uniquePrismaError } from "../lib/prisma-errors";
 
 const now = new Date("2026-04-20T10:00:00.000Z");
 
@@ -99,5 +100,43 @@ describe("SuppliersService", () => {
     await expect(service.findOne("missing")).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it("passes phones to repository on update when provided", async () => {
+    repo.findById.mockResolvedValue(supplier() as never);
+    repo.update.mockResolvedValue(supplier() as never);
+
+    await service.update("supplier-1", {
+      phones: ["82981112233"],
+    });
+
+    expect(repo.update).toHaveBeenCalledWith(
+      "supplier-1",
+      { phones: ["82981112233"] },
+      ["82981112233"],
+    );
+  });
+
+  it("maps Prisma unique violations to ConflictException", async () => {
+    repo.findByCnpj.mockResolvedValue(null);
+    repo.create.mockRejectedValue(uniquePrismaError("cnpj"));
+
+    await expect(
+      service.create({ cnpj: "11222333000181" } as never),
+    ).rejects.toThrow(new ConflictException("Este CNPJ já está cadastrado."));
+
+    repo.findById.mockResolvedValue(supplier() as never);
+    repo.update.mockRejectedValue(uniquePrismaError("email"));
+
+    await expect(
+      service.update("supplier-1", { email: "duplicado@example.com" }),
+    ).rejects.toThrow(new ConflictException("Este e-mail já está em uso."));
+
+    repo.findById.mockResolvedValue(supplier() as never);
+    repo.update.mockRejectedValue(new Error("db failure"));
+
+    await expect(
+      service.update("supplier-1", { legalName: "Falha" }),
+    ).rejects.toThrow("db failure");
   });
 });

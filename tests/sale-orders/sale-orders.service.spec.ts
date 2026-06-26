@@ -231,6 +231,123 @@ describe("SaleOrdersService", () => {
     );
   });
 
+  it("lists and finds sale orders", async () => {
+    repo.findAll.mockResolvedValue([saleOrder()]);
+    repo.findById.mockResolvedValueOnce(saleOrder());
+
+    await expect(service.findAll()).resolves.toHaveLength(1);
+    await expect(service.findOne("sale-order-1")).resolves.toMatchObject({
+      id: "sale-order-1",
+      total: 91.8,
+    });
+  });
+
+  it("returns existing order when update payload is empty", async () => {
+    repo.findById.mockResolvedValue(saleOrder());
+
+    await expect(service.update("sale-order-1", {})).resolves.toMatchObject({
+      id: "sale-order-1",
+    });
+    expect(orderLines.buildSaleLines).not.toHaveBeenCalled();
+    expect(repo.update).not.toHaveBeenCalled();
+  });
+
+  it("updates only orderDate without replacing items", async () => {
+    const newDate = new Date("2026-05-01T10:00:00.000Z");
+    repo.findById.mockResolvedValue(saleOrder());
+    repo.update.mockResolvedValue(saleOrder({ orderDate: newDate }));
+
+    await expect(
+      service.update("sale-order-1", { orderDate: newDate }),
+    ).resolves.toMatchObject({ id: "sale-order-1" });
+    expect(repo.update).toHaveBeenCalledWith("sale-order-1", {
+      orderDate: newDate,
+    });
+  });
+
+  it("rejects update when customer does not exist", async () => {
+    repo.findById.mockResolvedValue(saleOrder());
+    customersRepo.findById.mockResolvedValue(null);
+
+    await expect(
+      service.update("sale-order-1", { customerId: "missing-customer" }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it("rejects confirm/cancel/remove when order is missing or invalid", async () => {
+    repo.findById.mockResolvedValue(null);
+    await expect(service.confirm("missing")).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    await expect(service.cancel("missing")).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    await expect(service.remove("missing")).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+
+    repo.findById.mockResolvedValue(
+      saleOrder({ status: SaleOrderStatus.CONFIRMED }),
+    );
+    await expect(service.confirm("sale-order-1")).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+
+    repo.findById.mockResolvedValue(
+      saleOrder({ status: SaleOrderStatus.CANCELLED }),
+    );
+    await expect(service.cancel("sale-order-1")).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+  });
+
+  it("rejects update when sale order does not exist", async () => {
+    repo.findById.mockResolvedValue(null);
+
+    await expect(
+      service.update("missing", { orderDate: now }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it("updates only customerId without replacing items", async () => {
+    repo.findById.mockResolvedValue(saleOrder());
+    customersRepo.findById.mockResolvedValue({
+      id: "customer-2",
+      name: "Outro",
+    } as never);
+    repo.update.mockResolvedValue(
+      saleOrder({ customer: { id: "customer-2", name: "Outro" } }),
+    );
+
+    await expect(
+      service.update("sale-order-1", { customerId: "customer-2" }),
+    ).resolves.toMatchObject({
+      customer: { id: "customer-2" },
+    });
+    expect(repo.update).toHaveBeenCalledWith("sale-order-1", {
+      customer: { connect: { id: "customer-2" } },
+    });
+  });
+
+  it("rethrows unexpected stock errors during confirm", async () => {
+    repo.findById.mockResolvedValueOnce(saleOrder());
+    prisma.saleOrder.findUnique.mockResolvedValue({
+      id: "sale-order-1",
+      items: [{ productId: "product-1", quantity: new Prisma.Decimal("2") }],
+    });
+    productsRepo.updateStockTx.mockRejectedValue(new Error("db failure"));
+
+    await expect(service.confirm("sale-order-1")).rejects.toThrow("db failure");
+  });
+
+  it("rejects findOne when order does not exist", async () => {
+    repo.findById.mockResolvedValue(null);
+
+    await expect(service.findOne("missing")).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
   it("cancels DRAFT directly and CONFIRMED orders by restoring stock", async () => {
     repo.findById.mockResolvedValueOnce(saleOrder());
     repo.update.mockResolvedValueOnce(

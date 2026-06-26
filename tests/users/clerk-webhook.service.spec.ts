@@ -138,4 +138,65 @@ describe("ClerkWebhookService", () => {
       service.process({ x: 1 }, "id", "ts", "sig"),
     ).rejects.toBeInstanceOf(InternalServerErrorException);
   });
+
+  it("ignores unsupported webhook event types", async () => {
+    verifyMock.mockReturnValue({
+      type: "session.created",
+      data: {},
+    } as WebhookEvent);
+
+    await expect(
+      service.process({ x: 1 }, "id", "ts", "sig"),
+    ).resolves.toBeUndefined();
+    expect(repo.findByExternalId).not.toHaveBeenCalled();
+    expect(repo.upsertFromClerk).not.toHaveBeenCalled();
+  });
+
+  it("rejects Clerk payloads without email", async () => {
+    verifyMock.mockReturnValue({
+      type: "user.created",
+      data: {
+        id: "user_clerk_1",
+        email_addresses: [],
+        primary_email_address_id: null,
+      },
+    } as WebhookEvent);
+
+    await expect(service.process({ x: 1 }, "id", "ts", "sig")).rejects.toThrow(
+      new BadRequestException("E-mail do Clerk ausente."),
+    );
+  });
+
+  it("uses username or default display name when names are absent", async () => {
+    verifyMock.mockReturnValue({
+      type: "user.created",
+      data: {
+        id: "user_clerk_2",
+        email_addresses: [{ id: "ea1", email_address: "u@example.com" }],
+        primary_email_address_id: "ea1",
+        username: "pat_user",
+      },
+    } as WebhookEvent);
+    repo.findByExternalId.mockResolvedValue(null);
+    repo.upsertFromClerk.mockResolvedValue(user() as never);
+
+    await service.process({ x: 1 }, "id", "ts", "sig");
+    expect(repo.upsertFromClerk).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "pat_user" }),
+    );
+
+    verifyMock.mockReturnValue({
+      type: "user.created",
+      data: {
+        id: "user_clerk_3",
+        email_addresses: [{ id: "ea1", email_address: "u2@example.com" }],
+        primary_email_address_id: "ea1",
+      },
+    } as WebhookEvent);
+
+    await service.process({ x: 1 }, "id", "ts", "sig");
+    expect(repo.upsertFromClerk).toHaveBeenLastCalledWith(
+      expect.objectContaining({ name: "Usuário" }),
+    );
+  });
 });

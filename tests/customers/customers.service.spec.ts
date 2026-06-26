@@ -2,6 +2,7 @@ import { ConflictException, NotFoundException } from "@nestjs/common";
 
 import { CustomersRepository } from "../../src/customers/customers.repository";
 import { CustomersService } from "../../src/customers/customers.service";
+import { uniquePrismaError } from "../lib/prisma-errors";
 
 const now = new Date("2026-04-20T10:00:00.000Z");
 
@@ -109,5 +110,47 @@ describe("CustomersService", () => {
     await expect(service.remove("missing")).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it("passes phones to repository on update when provided", async () => {
+    repo.findById.mockResolvedValue(customer() as never);
+    repo.update.mockResolvedValue(customer() as never);
+
+    await service.update("customer-1", {
+      phones: ["82987654321"],
+    });
+
+    expect(repo.update).toHaveBeenCalledWith(
+      "customer-1",
+      { phones: ["82987654321"] },
+      ["82987654321"],
+    );
+  });
+
+  it("maps Prisma unique violations to ConflictException", async () => {
+    repo.findByDocument.mockResolvedValue(null);
+    repo.create.mockRejectedValue(uniquePrismaError("document"));
+
+    await expect(
+      service.create({
+        document: "11222333000181",
+      } as never),
+    ).rejects.toThrow(
+      new ConflictException("Este documento já está cadastrado."),
+    );
+
+    repo.findById.mockResolvedValue(customer() as never);
+    repo.update.mockRejectedValue(uniquePrismaError("email"));
+
+    await expect(
+      service.update("customer-1", { email: "duplicado@example.com" }),
+    ).rejects.toThrow(new ConflictException("Este e-mail já está em uso."));
+
+    repo.findById.mockResolvedValue(customer() as never);
+    repo.update.mockRejectedValue(new Error("db failure"));
+
+    await expect(
+      service.update("customer-1", { name: "Falha" }),
+    ).rejects.toThrow("db failure");
   });
 });
